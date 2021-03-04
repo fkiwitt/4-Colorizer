@@ -1,1 +1,1 @@
-# 4-color-theorem
+# 4 Colorizer

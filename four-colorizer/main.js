@@ -69,6 +69,8 @@ function colorize(){
 
 
 //// Generate Line Graph
+var dp = {};
+
 function generate_line_graph(){
 	var adjacency_list = [];
 
@@ -78,8 +80,15 @@ function generate_line_graph(){
 			if(line1 == line2){
 				continue;
 			}
-			if (do_intersect(stroke_history[line1], stroke_history[line2])){
+			if(line2 < line1){
+				if(dp[[line2, line1]]){
+					current_line_adjacency.push(line2);
+				}
+			} else if (do_intersect(stroke_history[line1], stroke_history[line2])){
 				current_line_adjacency.push(line2);
+				dp[[line1, line2]] = true;
+			} else {
+				dp[[line1, line2]] = false;
 			}
 		}
 		adjacency_list.push(current_line_adjacency);

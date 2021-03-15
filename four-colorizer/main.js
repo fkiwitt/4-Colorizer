@@ -69,47 +69,51 @@ function colorize(){
 
 
 //// Generate Line Graph
-var dp = {};
-
 function generate_line_graph(){
 	var adjacency_list = [];
+
+	for(var i = 0; i < stroke_history.length; i++){
+		var current_row = [];
+		for(var j = 0; j < stroke_history.length; j++){
+			current_row.push([]);
+		}
+		adjacency_list.push(current_row);
+	}
 
 	for(line1 in stroke_history){
 		var current_line_adjacency = [];
 		for(line2 in stroke_history){
-			if(line1 == line2){
-				continue;
-			}
-			if(line2 < line1){
-				if(dp[[line2, line1]]){
-					current_line_adjacency.push(line2);
-				}
-			} else if (do_intersect(stroke_history[line1], stroke_history[line2])){
-				current_line_adjacency.push(line2);
-				dp[[line1, line2]] = true;
-			} else {
-				dp[[line1, line2]] = false;
-			}
+			var intersect = intersection(stroke_history[line1], stroke_history[line2]);
+			current_line_adjacency.push([line2, intersect]);
 		}
-		adjacency_list.push(current_line_adjacency);
+		current_line_adjacency.sort(function(a,b){return -(a[1]-b[1]);});
+		for(var index = 0; index < current_line_adjacency.length - 1; index++){
+
+			if((index < (current_line_adjacency.length - 1)) && (current_line_adjacency[index + 1][1] != -1) && (current_line_adjacency[index+1][0] != line1) && (current_line_adjacency[index][0] != line1)){
+				adjacency_list[Math.min(line1, current_line_adjacency[index][0])][Math.max(line1, current_line_adjacency[index][0])].push([Math.min(line1, current_line_adjacency[index + 1][0]), Math.max(line1, current_line_adjacency[index + 1][0])]);
+				adjacency_list[Math.min(line1, current_line_adjacency[index + 1][0])][Math.max(line1, current_line_adjacency[index + 1][0])].push([Math.min(line1, current_line_adjacency[index][0]), Math.max(line1, current_line_adjacency[index][0])]);
+			}
+			
+		}
 	}
+
+
 	return adjacency_list;
 }
 
-function do_intersect(path1, path2){
-
+function intersection(path1, path2){
+	if(path1 == path2){
+		return -1;
+	}
 	var min_x1 = Math.min(path1[0], path1[2]);
 	var max_x1 = Math.max(path1[0], path1[2]);
+	var min_y1 = Math.min(path1[1], path1[3]);
+	var max_y1 = Math.max(path1[1], path1[3]);
+
 	var min_x2 = Math.min(path2[0], path2[2]);
 	var max_x2 = Math.max(path2[0], path2[2]);
-
-	if(((path1[2]-path1[0]) == 0) || ((path2[2]-path2[0]) == 0)){
-		if(((path1[2]-path1[0]) == 0) && ((path2[2]-path2[0]) == 0)){
-			return (path1[0]==path2[0]);
-		}
-
-		return (((min_x1 - 10) <= min_x2 && (max_x1+10) >= min_x2) || ((min_x2-10) <= min_x1 && (max_x2+10) >= min_x1));
-	}
+	var min_y2 = Math.min(path2[1], path2[3]);
+	var max_y2 = Math.max(path2[1], path2[3]);
 
 	var m1 = (path1[3]-path1[1])/(path1[2]-path1[0]);
 	var c1 = path1[1]-m1*path1[0];
@@ -117,11 +121,37 @@ function do_intersect(path1, path2){
 	var m2 = (path2[3]-path2[1])/(path2[2]-path2[0]);
 	var c2 = path2[1]-m2*path2[0];
 
-	var intersection_x = (c2-c1)/(m1-m2);
+	var does_intersect = true;
+	if((path1[2]-path1[0] == 0) && (path2[2]-path2[0] != 0)){
+		does_intersect = false;
+		if(min_x1 >= (min_x2 - 10) && min_x1 <= (max_x2 + 10)){
+			var intersection_y = min_x1 * m2 + c2;
+			if((intersection_y >= (min_y1 - 10)) && (intersection_y <= (max_y1 + 10))){
+				does_intersect = true;
+				return intersection_y;
+			}
+		}
+	}else if((path1[2]-path1[0] != 0) && (path2[2]-path2[0] == 0)){
+		does_intersect = false;
+		if(min_x2 >= (min_x1 - 10) && min_x2 <= (max_x1 + 10)){
+			var intersection_y = min_x2 * m1 + c1;
+			if((intersection_y >= (min_y2 - 10)) && (intersection_y <= (max_y2 + 10))){
+				does_intersect = true;
+				return min_x2;
+			}
+		}
+	}
 
-	if(intersection_x >= (min_x1-10) && intersection_x <= (max_x1+10) && intersection_x >= (min_x2-10) && intersection_x <= (max_x2+10)){
-		return true;
+	if (does_intersect == false){
+		return -1;
+	}
+
+	var intersection_x = (c2-c1)/(m1-m2);
+	var intersection_y = m1 * intersection_x + c1;
+
+	if(intersection_x >= (min_x1-10) && intersection_x <= (max_x1+10) && intersection_x >= (min_x2-10) && intersection_x <= (max_x2+10) && intersection_y >= (min_y1-10) && intersection_y <= (max_y1+10) && intersection_y >= (min_y2-10) && intersection_y <= (max_y2+10)){
+		return intersection_x;
 	}else{
-		return false;
+		return -1;
 	}
 }

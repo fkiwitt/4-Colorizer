@@ -63,13 +63,14 @@ $(canvas).on('mousemove', function(e) {
 
 //// Colorize
 function colorize(){
-	var adjacency_list = generate_line_graph();
+	var adjacency_list = generate_node_graph();
 	console.log(adjacency_list);
+
 }
 
 
-//// Generate Line Graph
-function generate_line_graph(){
+//// Generate Node Graph
+function generate_node_graph(){
 	var adjacency_list = [];
 
 	for(var i = 0; i < stroke_history.length; i++){
@@ -82,21 +83,23 @@ function generate_line_graph(){
 
 	for(line1 in stroke_history){
 		var current_line_adjacency = [];
+
 		for(line2 in stroke_history){
 			var intersect = intersection(stroke_history[line1], stroke_history[line2]);
 			current_line_adjacency.push([line2, intersect]);
 		}
+
 		current_line_adjacency.sort(function(a,b){return -(a[1]-b[1]);});
+
 		for(var index = 0; index < current_line_adjacency.length - 1; index++){
 
 			if((index < (current_line_adjacency.length - 1)) && (current_line_adjacency[index + 1][1] != -1) && (current_line_adjacency[index+1][0] != line1) && (current_line_adjacency[index][0] != line1)){
 				adjacency_list[Math.min(line1, current_line_adjacency[index][0])][Math.max(line1, current_line_adjacency[index][0])].push([Math.min(line1, current_line_adjacency[index + 1][0]), Math.max(line1, current_line_adjacency[index + 1][0])]);
 				adjacency_list[Math.min(line1, current_line_adjacency[index + 1][0])][Math.max(line1, current_line_adjacency[index + 1][0])].push([Math.min(line1, current_line_adjacency[index][0]), Math.max(line1, current_line_adjacency[index][0])]);
 			}
-			
+
 		}
 	}
-
 
 	return adjacency_list;
 }

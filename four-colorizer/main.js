@@ -191,7 +191,6 @@ function add_line(line){
 		graph[indices[intersections[0]]].push(coordinates.length-1);
 		graph[coordinates.length-1].push(indices[intersections[0]]);
 		add_vertex();
-		union(indices[intersections[0]], coordinates.length-1); //I can connect them directly, because start_pos is no intersection, so the edge from start_pos to the first intersection cannot create a new face
 	}
 	if (end_pos != intersections[n-1]){ //chech so that there are no two nodes on the same coordinate (may still be a problem somewhere else)
 		indices[end_pos] = coordinates.length;
@@ -201,12 +200,26 @@ function add_line(line){
 		graph[indices[intersections[n-1]]].push(coordinates.length-1);
 		graph[coordinates.length-1].push(indices[intersections[n-1]]);
 		add_vertex();
-		union(indices[intersections[n-1]], coordinates.length-1);
 	}
 	console.log(new_edges);
 	console.log(graph);
 	console.log(parent);
 	
+}
+
+
+function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
+	if (find_set(new_edge[0]) == find_set[new_edge[1]]){
+		return true;
+	}
+	return false;
+}
+
+function find_face(new_edge){
+	if (!check_if_new_face(new_edge)){
+		return -1;
+	}
+	//calculate which face will be splitted
 }
 
 

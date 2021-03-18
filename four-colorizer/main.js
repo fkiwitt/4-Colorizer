@@ -48,7 +48,6 @@ $(canvas).on('mouseup', function(e) {
     mousedown = false;
 		stroke_history.push(current_stroke);
 		on_draw_line(current_stroke);
-		add_line(current_stroke);
 });
 
 //Mousemove
@@ -62,19 +61,6 @@ $(canvas).on('mousemove', function(e) {
     }
 });
 
-
-function on_draw_line(current_stroke){
-	/*var new_graph = generate_node_graph(current_stroke);
-	console.log(new_graph);*/
-	var bla = "Hello";
-}
-
-//// Colorize
-function colorize(){
-
-}
-
-
 var coordinates = [[0,0],[800,0],[800,500],[0,500]];
 var indices = {"[0,0]":0, "[800,0]":1, "[800,500]":2, "[0,500]":3};//change again!!!
 // initial graph
@@ -84,6 +70,22 @@ var graph = [
 	[1,3],
 	[0,2]
 ];
+
+var faces = [ [0,1,2,3] ];
+
+
+function on_draw_line(current_stroke){
+	var result = add_line(current_stroke);
+	var new_edges = result[0];
+	var adjacent_edges = result[1];
+
+	for(new_edge in new_edges) {
+		var face_split = check_if_new_face(new_edges[new_edge]);
+		if(face_split != -1){
+			split_face(face_id, new_edges[new_edge], adjacent_edges[new_edge]);
+		}
+	}
+}
 
 
 /*//initial edges
@@ -204,10 +206,10 @@ function add_line(line){
 	console.log(new_edges);
 	console.log(graph);
 	console.log(parent);
-	
+
 }
 
-
+<<<<<<< HEAD
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 	if (find_set(new_edge[0]) == find_set[new_edge[1]]){
 		return true;
@@ -223,37 +225,9 @@ function find_face(new_edge){
 }
 
 
-// function generate_node_graph(new_edge){
-// 	var adjacency_list = [];
-// 	for(var i = 0; i < stroke_history.length; i++){
-// 		var current_row = [];
-// 		for(var j = 0; j < stroke_history.length; j++){
-// 			current_row.push([]);
-// 		}
-// 		adjacency_list.push(current_row);
-// 	}
-// 	for(line1 in stroke_history){
-// 		var current_line_adjacency = [];
-// 		for(line2 in stroke_history){
-// 			var intersect, intersection_coordinates = intersection(stroke_history[line1], stroke_history[line2]);
-// 			current_line_adjacency.push([line2, intersect]);
-// 			if(line1 <= line2){
-// 				indices[intersection_coordinates] = coordinates.length;
-// 				coordinates.push(intersection_coordinates);
-// 			}
-// 		}
-// 		current_line_adjacency.sort(function(a,b){return -(a[1]-b[1]);});
-// 		for(var index = 0; index < current_line_adjacency.length - 1; index++){
-// 			if((index < (current_line_adjacency.length - 1)) && (current_line_adjacency[index + 1][1] != -1) && (current_line_adjacency[index+1][0] != line1) && (current_line_adjacency[index][0] != line1)){
-// 				adjacency_list[Math.min(line1, current_line_adjacency[index][0])][Math.max(line1, current_line_adjacency[index][0])].push([Math.min(line1, current_line_adjacency[index + 1][0]), Math.max(line1, current_line_adjacency[index + 1][0])]);
-// 				adjacency_list[Math.min(line1, current_line_adjacency[index + 1][0])][Math.max(line1, current_line_adjacency[index + 1][0])].push([Math.min(line1, current_line_adjacency[index][0]), Math.max(line1, current_line_adjacency[index][0])]);
-// 			}
-// 		}
-// 	}
-// 	return adjacency_list;
-// }
-
 function intersection(path1, path2){
+	var grace = 10; //DEBUG ONLY
+
 	if(path1 == path2){
 		return -1;
 	}
@@ -276,18 +250,18 @@ function intersection(path1, path2){
 	var does_intersect = true;
 	if((path1[2]-path1[0] == 0) && (path2[2]-path2[0] != 0)){
 		does_intersect = false;
-		if(min_x1 >= (min_x2 - 0) && min_x1 <= (max_x2 + 0)){
+		if(min_x1 >= (min_x2 - grace) && min_x1 <= (max_x2 + grace)){
 			var intersection_y = min_x1 * m2 + c2;
-			if((intersection_y >= (min_y1 - 0)) && (intersection_y <= (max_y1 + 0))){
+			if((intersection_y >= (min_y1 - grace)) && (intersection_y <= (max_y1 + grace))){
 				does_intersect = true;
 				return [min_x1, intersection_y];
 			}
 		}
 	} else if((path1[2]-path1[0] != 0) && (path2[2]-path2[0] == 0)){
 		does_intersect = false;
-		if(min_x2 >= (min_x1 - 0) && min_x2 <= (max_x1 + 0)){
+		if(min_x2 >= (min_x1 - grace) && min_x2 <= (max_x1 + grace)){
 			var intersection_y = min_x2 * m1 + c1;
-			if((intersection_y >= (min_y2 - 0)) && (intersection_y <= (max_y2 + 0))){
+			if((intersection_y >= (min_y2 - grace)) && (intersection_y <= (max_y2 + grace))){
 				does_intersect = true;
 				return [min_x2, intersection_y];
 			}
@@ -301,9 +275,41 @@ function intersection(path1, path2){
 	var intersection_x = (c2-c1)/(m1-m2);
 	var intersection_y = m1 * intersection_x + c1;
 
-	if(intersection_x >= (min_x1-0) && intersection_x <= (max_x1+0) && intersection_x >= (min_x2-0) && intersection_x <= (max_x2+0) && intersection_y >= (min_y1-0) && intersection_y <= (max_y1+0) && intersection_y >= (min_y2-0) && intersection_y <= (max_y2+0)){
+	if(intersection_x >= (min_x1-grace) && intersection_x <= (max_x1+grace) && intersection_x >= (min_x2-grace) && intersection_x <= (max_x2+grace) && intersection_y >= (min_y1-grace) && intersection_y <= (max_y1+grace) && intersection_y >= (min_y2-grace) && intersection_y <= (max_y2+grace)){
 		return [intersection_x, intersection_y];
 	}else{
 		return -1;
 	}
+}
+
+function split_face(face_id, new_edge, adjacent_edges){
+	var polygon = faces[face_id];
+	var face1 = [];
+	var face2 = [];
+
+	var after_edge = false;
+	for(node in polygon){
+		var element = polygon[node];
+		var both = false;
+
+		for(adjacent_edge in adjacent_edges){
+			for(adjacent_node in adjacent_edge){
+				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
+					after_edge = !after_edge
+					both = true;
+					adjacent_edges[adjacent_edge] = [-1,-1];
+				}
+			}
+		}
+
+		if(!after_edge || both){
+			face1.push(element);
+		}
+		if(after_edge || both) {
+			face2.push(element);
+		}
+	}
+
+	faces[face_id] = face1;
+	faces.push(face2);
 }

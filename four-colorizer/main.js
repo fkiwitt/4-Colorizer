@@ -5,7 +5,7 @@ var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 
 var btn = document.getElementById('colorize-btn');
-btn.onclick = function() {colorize()};
+// btn.onclick = function() {colorize()};
 
 //Variables
 var canvasx = $(canvas).offset().left;
@@ -57,6 +57,7 @@ $(canvas).on('mousemove', function(e) {
     if(mousedown) {
         ctx.clearRect(0,0,canvas.width,canvas.height); //clear canvas
 				current_stroke = [start_x, start_y, mouse_x, mouse_y];
+				colorize();
 				draw_current_canvas();
     }
 });
@@ -72,19 +73,25 @@ var graph = [
 ];
 
 var faces = [ [0,1,2,3] ];
+var color_configuration = [ 0 ];
+var colors = ['#f00', '#f00', '#f00', '#f00'];
 
 
 function on_draw_line(current_stroke){
-	var result = add_line(current_stroke);
+	// var result = add_line(current_stroke);
 	var new_edges = result[0];
 	var adjacent_edges = result[1];
 
 	for(new_edge in new_edges) {
-		var face_split = check_if_new_face(new_edges[new_edge]);
+		var face_split = find_face(new_edges[new_edge]);
 		if(face_split != -1){
 			split_face(face_id, new_edges[new_edge], adjacent_edges[new_edge]);
 		}
 	}
+
+	// Calculate color configuration
+
+	colorize();
 }
 
 
@@ -209,7 +216,6 @@ function add_line(line){
 
 }
 
-<<<<<<< HEAD
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 	if (find_set(new_edge[0]) == find_set[new_edge[1]]){
 		return true;
@@ -312,4 +318,22 @@ function split_face(face_id, new_edge, adjacent_edges){
 
 	faces[face_id] = face1;
 	faces.push(face2);
+}
+
+function colorize(){
+	for(face in faces){
+		ctx.fillStyle = colors[color_configuration[face]];
+		ctx.beginPath();
+		var begin = true;
+		for(node in faces[face]){
+			var element_coordinates = coordinates[faces[face][node]];
+			if(begin){ ctx.moveTo(element_coordinates[0], element_coordinates[1]); begin = false;} else {
+				ctx.lineTo(element_coordinates[0], element_coordinates[1]);
+			}
+		}
+		ctx.closePath();
+		ctx.fill();
+	}
+
+	draw_current_canvas();
 }

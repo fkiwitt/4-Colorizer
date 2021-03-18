@@ -47,6 +47,7 @@ $(canvas).on('mousedown', function(e) {
 $(canvas).on('mouseup', function(e) {
     mousedown = false;
 		stroke_history.push(current_stroke);
+		on_draw_line(current_stroke);
 });
 
 //Mousemove
@@ -61,16 +62,22 @@ $(canvas).on('mousemove', function(e) {
 });
 
 
+function on_draw_line(current_stroke){
+	var new_graph = generate_node_graph(current_stroke);
+	console.log(new_graph);
+}
+
 //// Colorize
 function colorize(){
-	var adjacency_list = generate_node_graph();
-	console.log(adjacency_list);
 
 }
 
 
 //// Generate Node Graph
-function generate_node_graph(){
+var coordinates = [];
+var indices = {};
+
+function generate_node_graph(new_edge){
 	var adjacency_list = [];
 
 	for(var i = 0; i < stroke_history.length; i++){
@@ -85,8 +92,14 @@ function generate_node_graph(){
 		var current_line_adjacency = [];
 
 		for(line2 in stroke_history){
-			var intersect = intersection(stroke_history[line1], stroke_history[line2]);
+			var intersect, intersection_coordinates = intersection(stroke_history[line1], stroke_history[line2]);
 			current_line_adjacency.push([line2, intersect]);
+
+			if(line1 <= line2){
+				indices[intersection_coordinates] = coordinates.length;
+				coordinates.push(intersection_coordinates);
+			}
+
 		}
 
 		current_line_adjacency.sort(function(a,b){return -(a[1]-b[1]);});
@@ -131,16 +144,16 @@ function intersection(path1, path2){
 			var intersection_y = min_x1 * m2 + c2;
 			if((intersection_y >= (min_y1 - 0)) && (intersection_y <= (max_y1 + 0))){
 				does_intersect = true;
-				return intersection_y;
+				return intersection_y, [min_x1, intersection_y];
 			}
 		}
-	}else if((path1[2]-path1[0] != 0) && (path2[2]-path2[0] == 0)){
+	} else if((path1[2]-path1[0] != 0) && (path2[2]-path2[0] == 0)){
 		does_intersect = false;
 		if(min_x2 >= (min_x1 - 0) && min_x2 <= (max_x1 + 0)){
 			var intersection_y = min_x2 * m1 + c1;
 			if((intersection_y >= (min_y2 - 0)) && (intersection_y <= (max_y2 + 0))){
 				does_intersect = true;
-				return min_x2;
+				return min_x2, [min_x2, intersection_y];
 			}
 		}
 	}
@@ -153,7 +166,7 @@ function intersection(path1, path2){
 	var intersection_y = m1 * intersection_x + c1;
 
 	if(intersection_x >= (min_x1-0) && intersection_x <= (max_x1+0) && intersection_x >= (min_x2-0) && intersection_x <= (max_x2+0) && intersection_y >= (min_y1-0) && intersection_y <= (max_y1+0) && intersection_y >= (min_y2-0) && intersection_y <= (max_y2+0)){
-		return intersection_x;
+		return intersection_x, [intersection_x, intersection_y];
 	}else{
 		return -1;
 	}

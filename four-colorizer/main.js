@@ -85,7 +85,7 @@ function on_draw_line(current_stroke){
 	for(new_edge in new_edges) {
 		var face_split = find_face(new_edges[new_edge]);
 		if(face_split != -1){
-			split_face(face_id, new_edges[new_edge], adjacent_edges[new_edge]);
+			split_face(face_id, new_edges[new_edge], [adjacent_edges[new_edge], adjacent_edges[new_edge]]);
 		}
 	}
 
@@ -301,18 +301,18 @@ function split_face(face_id, new_edge, adjacent_edges){
 		for(adjacent_edge in adjacent_edges){
 			for(adjacent_node in adjacent_edge){
 				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
-					after_edge = !after_edge
-					both = true;
+					after_edge = !after_edge;
+					face1.push(new_edge[adjacent_node]);
+					face2.push(new_edge[adjacent_node]);
 					adjacent_edges[adjacent_edge] = [-1,-1];
 				}
 			}
 		}
 
-		if(!after_edge || both){
+		if(!after_edge){
 			face1.push(element);
-		}
-		if(after_edge || both) {
-			face2.push(element);
+		}else{
+			face2.push(element;)
 		}
 	}
 

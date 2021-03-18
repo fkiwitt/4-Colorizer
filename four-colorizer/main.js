@@ -74,7 +74,7 @@ var graph = [
 
 var faces = [ [0,1,2,3] ];
 var color_configuration = [ 0 ];
-var colors = ['#f00', '#f00', '#f00', '#f00'];
+var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 
 function on_draw_line(current_stroke){
@@ -312,7 +312,7 @@ function split_face(face_id, new_edge, adjacent_edges){
 		if(!after_edge){
 			face1.push(element);
 		}else{
-			face2.push(element;)
+			face2.push(element);
 		}
 	}
 

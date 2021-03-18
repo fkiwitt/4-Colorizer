@@ -73,21 +73,23 @@ var graph = [
 ];
 
 var faces = [ [0,1,2,3] ];
-var color_configuration = [ 0 ];
+var color_configuration = [ 0, 1 ];
 var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 
 function on_draw_line(current_stroke){
-	// var result = add_line(current_stroke);
+	var result = add_line(current_stroke);
 	var new_edges = result[0];
 	var adjacent_edges = result[1];
 
 	for(new_edge in new_edges) {
-		var face_split = find_face(new_edges[new_edge]);
-		if(face_split != -1){
+		var face_id = find_face(new_edges[new_edge]);
+		if(face_id != -1){
 			split_face(face_id, new_edges[new_edge], [adjacent_edges[new_edge], adjacent_edges[new_edge]]);
 		}
 	}
+
+	// console.log("faces:",faces);
 
 	// Calculate color configuration
 
@@ -213,7 +215,7 @@ function add_line(line){
 	console.log(new_edges);
 	console.log(graph);
 	console.log(parent);
-
+	return [new_edges, adjacent_edges];
 }
 
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
@@ -232,7 +234,7 @@ function find_face(new_edge){
 
 
 function intersection(path1, path2){
-	var grace = 10; //DEBUG ONLY
+	var grace = 0; //DEBUG ONLY
 
 	if(path1 == path2){
 		return -1;
@@ -299,7 +301,7 @@ function split_face(face_id, new_edge, adjacent_edges){
 		var both = false;
 
 		for(adjacent_edge in adjacent_edges){
-			for(adjacent_node in adjacent_edge){
+			for(adjacent_node in adjacent_edges[adjacent_edge]){
 				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
 					after_edge = !after_edge;
 					face1.push(new_edge[adjacent_node]);

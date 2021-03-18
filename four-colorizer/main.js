@@ -71,8 +71,7 @@ var graph = [
 	[0,2]
 ];
 
-var faces = [ [0,1,2,3] ];
-
+var faces = [ [0,1,2,3] ];//means for example that the first face has the edges [0,1],[1,2],[2,3],[3,0]
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
@@ -80,11 +79,14 @@ function on_draw_line(current_stroke){
 	var adjacent_edges = result[1];
 
 	for(new_edge in new_edges) {
-		var face_split = check_if_new_face(new_edges[new_edge]);
-		if(face_split != -1){
+		var cnt = 0;
+		if (check_if_new_face(new_edge)){
+			var face_id = find_face(new_edges[new_edge]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
 			split_face(face_id, new_edges[new_edge], adjacent_edges[new_edge]);
+			cnt++;
 		}
 	}
+	console.log("This line creates ", cnt, " new faces.");
 }
 
 
@@ -209,7 +211,46 @@ function add_line(line){
 
 }
 
-<<<<<<< HEAD
+/*function find_faces_of_edge(edge){ // not needed anymore by new approach
+	matching_faces_by_idx = [];
+	for (i in faces){
+		var face = faces[i];
+		var n = face.length;
+		for (j in face){
+			if ([face[j],face[(j+1)%n] == edge || [face[(j+1)%n],face[j]] == edge){
+				matching_faces_by_idx.push(i);
+				break;
+			}
+		}
+	}
+	return matching_faces_by_idx;
+}*/
+//old code from find_face:
+/*faces1 = find_faces_of_edge(adjacent_edge1);
+	faces2 = find_faces_of_edge(adjacent_edge2);
+	if (faces1 == [] || faces2 == []){
+		console.log("This edge case does not work yet!");
+	}
+	else {
+		face = faces1.filter(value => faces2.includes(value))[0];//should the intersection of faces1 and faces2 should contain exactly one element ???
+	}*/
+
+var reference_point = [-371,-731];//just some random point outside (random so that it may be unlikely to cut exactly through a vertex, which would ruin the algorithm)
+function num_intersections_from_outside(mid_point, face){
+	var num_intersections = 0;
+	var n = face.length;
+	var line = reference_point.concat(mid_point);
+	//calc how many intersections there are
+	for (i in face){
+		var edge = [face[i], face[(i+1)%n]];
+		var edge_representation = coordinates[edge[0]].concat(coordinates[edge[1]]);
+		if (intersection(line,edge_representation) != -1){
+			num_intersections++;
+		}
+	}
+	return num_intersections;
+}
+
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 	if (find_set(new_edge[0]) == find_set[new_edge[1]]){
 		return true;
@@ -218,10 +259,17 @@ function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 }
 
 function find_face(new_edge){
-	if (!check_if_new_face(new_edge)){
-		return -1;
-	}
 	//calculate which face will be splitted
+	p1 = coordinates[new_edge[0]];
+	p2 = coordinates[new_edge[1]];
+	mid_point = [(p1[0]+p2[0])/2, (p1[1],p2[1])/2];
+	for (i in faces){
+		face = faces[i];
+		if (num_intersections_from_outside(mid_point, face)%2 == 1){//if sth fails check if there really is exactly one face with uneven intersections
+			return i;
+		}
+	}
+	console.log("something went wrong; could not find face that is split")
 }
 
 

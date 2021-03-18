@@ -127,18 +127,18 @@ function intersection(path1, path2){
 	var does_intersect = true;
 	if((path1[2]-path1[0] == 0) && (path2[2]-path2[0] != 0)){
 		does_intersect = false;
-		if(min_x1 >= (min_x2 - 10) && min_x1 <= (max_x2 + 10)){
+		if(min_x1 >= (min_x2 - 0) && min_x1 <= (max_x2 + 0)){
 			var intersection_y = min_x1 * m2 + c2;
-			if((intersection_y >= (min_y1 - 10)) && (intersection_y <= (max_y1 + 10))){
+			if((intersection_y >= (min_y1 - 0)) && (intersection_y <= (max_y1 + 0))){
 				does_intersect = true;
 				return intersection_y;
 			}
 		}
 	}else if((path1[2]-path1[0] != 0) && (path2[2]-path2[0] == 0)){
 		does_intersect = false;
-		if(min_x2 >= (min_x1 - 10) && min_x2 <= (max_x1 + 10)){
+		if(min_x2 >= (min_x1 - 0) && min_x2 <= (max_x1 + 0)){
 			var intersection_y = min_x2 * m1 + c1;
-			if((intersection_y >= (min_y2 - 10)) && (intersection_y <= (max_y2 + 10))){
+			if((intersection_y >= (min_y2 - 0)) && (intersection_y <= (max_y2 + 0))){
 				does_intersect = true;
 				return min_x2;
 			}
@@ -152,7 +152,7 @@ function intersection(path1, path2){
 	var intersection_x = (c2-c1)/(m1-m2);
 	var intersection_y = m1 * intersection_x + c1;
 
-	if(intersection_x >= (min_x1-10) && intersection_x <= (max_x1+10) && intersection_x >= (min_x2-10) && intersection_x <= (max_x2+10) && intersection_y >= (min_y1-10) && intersection_y <= (max_y1+10) && intersection_y >= (min_y2-10) && intersection_y <= (max_y2+10)){
+	if(intersection_x >= (min_x1-0) && intersection_x <= (max_x1+0) && intersection_x >= (min_x2-0) && intersection_x <= (max_x2+0) && intersection_y >= (min_y1-0) && intersection_y <= (max_y1+0) && intersection_y >= (min_y2-0) && intersection_y <= (max_y2+0)){
 		return intersection_x;
 	}else{
 		return -1;

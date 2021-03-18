@@ -92,8 +92,27 @@ for (line in stroke_history){
 	edges.push([indices[[stroke_history[0],stroke_history[1]]], indices[[stroke_history[2], stroke_history[3]]]]);
 }*/
 
+var parent = [0,0,0,0]
 
+//DSU
+function add_vertex(){
+	parent.push(parent.length);
+}
 
+function find_set(v){
+	if (v == parent[v]){
+		return v;
+	}
+	return parent[v] = find_set(parent[v]);//hope that works in JS
+}
+
+function union(u,v) { // could be more efficient with union by size
+	a = find_set(u);
+	b = find_set(v);
+	if (a != b) {
+		parent[b] = a;
+	}
+}
 
 
 function add_line(line){
@@ -133,7 +152,10 @@ function add_line(line){
 		graph.push([]);
 		graph[coordinates.length-2].push(coordinates.length-1);
 		graph[coordinates.length-1].push(coordinates.length-2);
-		console.log(graph)
+		console.log(graph);
+		add_vertex();
+		add_vertex();
+		union(coordinates.length-1, coordinates.length-2);
 		return -1;
 	}
 	for (var i = 0; i < n; i++){
@@ -157,6 +179,9 @@ function add_line(line){
 		graph[node2].push(current);
 		graph[current].push(node2);
 
+		add_vertex();
+		union(node1, current);//node1 and node2 should already be in the same set
+
 	}
 	if (start_pos != intersections[0]){ //chech so that there are no two nodes on the same coordinate (may still be a problem somewhere else)
 		indices[start_pos] = coordinates.length;
@@ -165,6 +190,8 @@ function add_line(line){
 		graph.push([]);
 		graph[indices[intersections[0]]].push(coordinates.length-1);
 		graph[coordinates.length-1].push(indices[intersections[0]]);
+		add_vertex();
+		union(indices[intersections[0]], coordinates.length-1); //I can connect them directly, because start_pos is no intersection, so the edge from start_pos to the first intersection cannot create a new face
 	}
 	if (end_pos != intersections[n-1]){ //chech so that there are no two nodes on the same coordinate (may still be a problem somewhere else)
 		indices[end_pos] = coordinates.length;
@@ -173,9 +200,12 @@ function add_line(line){
 		graph.push([]);
 		graph[indices[intersections[n-1]]].push(coordinates.length-1);
 		graph[coordinates.length-1].push(indices[intersections[n-1]]);
+		add_vertex();
+		union(indices[intersections[n-1]], coordinates.length-1);
 	}
 	console.log(new_edges);
 	console.log(graph);
+	console.log(parent);
 	
 }
 

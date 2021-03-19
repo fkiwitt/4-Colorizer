@@ -5,7 +5,7 @@ var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 
 var btn = document.getElementById('colorize-btn');
-btn.onclick = function() {colorize()};
+// btn.onclick = function() {colorize()};
 
 //Variables
 var canvasx = $(canvas).offset().left;
@@ -57,6 +57,7 @@ $(canvas).on('mousemove', function(e) {
     if(mousedown) {
         ctx.clearRect(0,0,canvas.width,canvas.height); //clear canvas
 				current_stroke = [start_x, start_y, mouse_x, mouse_y];
+				colorize();
 				draw_current_canvas();
     }
 });
@@ -72,32 +73,36 @@ var graph = [
 ];
 
 var faces = [ [0,1,2,3] ];//means for example that the first face has the edges [0,1],[1,2],[2,3],[3,0]
+var color_configuration = [ 0, 1 ];
+var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
+
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
 	var new_edges = result[0];
 	var adjacent_edges = result[1];
 
-	for(new_edge in new_edges) {
-		var cnt = 0;
-		if (check_if_new_face(new_edge)){
-			var face_id = find_face(new_edges[new_edge]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
-			split_face(face_id, new_edges[new_edge], adjacent_edges[new_edge]);
+	var cnt = 0;
+	for(idx in new_edges) {
+		if (check_if_new_face(new_edges[idx])){
+			//TODO: Test and find mistakes: make sure union find works correctly (I think there is sth wrong); make sure find_face works and fix split face
+			console.log(new_edges[idx]);
+			var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
+			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
+			union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 			cnt++;
 		}
 	}
 	console.log("This line creates ", cnt, " new faces.");
+	// console.log("faces:",faces);
+
+	// Calculate color configuration
+	colorize();
 }
 
 
-/*//initial edges
-var edges = [];
-for (line in stroke_history){
-	edges.push([indices[[stroke_history[0],stroke_history[1]]], indices[[stroke_history[2], stroke_history[3]]]]);
-}*/
 
 var parent = [0,0,0,0]
-
 //DSU
 function add_vertex(){
 	parent.push(parent.length);
@@ -107,7 +112,8 @@ function find_set(v){
 	if (v == parent[v]){
 		return v;
 	}
-	return parent[v] = find_set(parent[v]);//hope that works in JS
+	parent[v] = find_set(parent[v]);
+	return parent[v];
 }
 
 function union(u,v) { // could be more efficient with union by size
@@ -208,32 +214,9 @@ function add_line(line){
 	console.log(new_edges);
 	console.log(graph);
 	console.log(parent);
-
+	return [new_edges, adjacent_edges];
 }
 
-/*function find_faces_of_edge(edge){ // not needed anymore by new approach
-	matching_faces_by_idx = [];
-	for (i in faces){
-		var face = faces[i];
-		var n = face.length;
-		for (j in face){
-			if ([face[j],face[(j+1)%n] == edge || [face[(j+1)%n],face[j]] == edge){
-				matching_faces_by_idx.push(i);
-				break;
-			}
-		}
-	}
-	return matching_faces_by_idx;
-}*/
-//old code from find_face:
-/*faces1 = find_faces_of_edge(adjacent_edge1);
-	faces2 = find_faces_of_edge(adjacent_edge2);
-	if (faces1 == [] || faces2 == []){
-		console.log("This edge case does not work yet!");
-	}
-	else {
-		face = faces1.filter(value => faces2.includes(value))[0];//should the intersection of faces1 and faces2 should contain exactly one element ???
-	}*/
 
 var reference_point = [-371,-731];//just some random point outside (random so that it may be unlikely to cut exactly through a vertex, which would ruin the algorithm)
 function num_intersections_from_outside(mid_point, face){
@@ -252,7 +235,7 @@ function num_intersections_from_outside(mid_point, face){
 }
 
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
-	if (find_set(new_edge[0]) == find_set[new_edge[1]]){
+	if (find_set(new_edge[0]) == find_set(new_edge[1])){
 		return true;
 	}
 	return false;
@@ -274,7 +257,7 @@ function find_face(new_edge){
 
 
 function intersection(path1, path2){
-	var grace = 10; //DEBUG ONLY
+	var grace = 0; //set to 20 for special debugging
 
 	if(path1 == path2){
 		return -1;
@@ -341,23 +324,41 @@ function split_face(face_id, new_edge, adjacent_edges){
 		var both = false;
 
 		for(adjacent_edge in adjacent_edges){
-			for(adjacent_node in adjacent_edge){
+			for(adjacent_node in adjacent_edges[adjacent_edge]){
 				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
-					after_edge = !after_edge
-					both = true;
+					after_edge = !after_edge;
+					face1.push(new_edge[adjacent_node]);
+					face2.push(new_edge[adjacent_node]);
 					adjacent_edges[adjacent_edge] = [-1,-1];
 				}
 			}
 		}
 
-		if(!after_edge || both){
+		if(!after_edge){
 			face1.push(element);
-		}
-		if(after_edge || both) {
+		}else{
 			face2.push(element);
 		}
 	}
 
 	faces[face_id] = face1;
 	faces.push(face2);
+}
+
+function colorize(){
+	for(face in faces){
+		ctx.fillStyle = colors[color_configuration[face]];
+		ctx.beginPath();
+		var begin = true;
+		for(node in faces[face]){
+			var element_coordinates = coordinates[faces[face][node]];
+			if(begin){ ctx.moveTo(element_coordinates[0], element_coordinates[1]); begin = false;} else {
+				ctx.lineTo(element_coordinates[0], element_coordinates[1]);
+			}
+		}
+		ctx.closePath();
+		ctx.fill();
+	}
+
+	draw_current_canvas();
 }

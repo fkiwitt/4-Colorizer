@@ -79,6 +79,7 @@ var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
+	//console.log("coordinates: ", coordinates);//printing coordinates
 	var new_edges = result[0];
 	var adjacent_edges = result[1];
 
@@ -86,7 +87,7 @@ function on_draw_line(current_stroke){
 	for(idx in new_edges) {
 		if (check_if_new_face(new_edges[idx])){
 			//TODO: Test and find mistakes: make sure union find works correctly (I think there is sth wrong); make sure find_face works and fix split face
-			console.log(new_edges[idx]);
+			//console.log(new_edges[idx]);
 			var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
 			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
 			union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
@@ -125,6 +126,16 @@ function union(u,v) { // could be more efficient with union by size
 }
 
 
+function index_of(arr, elem){//yep I'm using my own index_of method, because the array.indexOf method of javascript is apparently not working (maybe some weird stuff because of type compare (===))
+	for (i in arr){
+		if (arr[i] == elem){
+			return i;
+		}
+	}
+	return -1;
+}
+
+
 function add_line(line){
 	var start_pos = [line[0],line[1]];
 	var end_pos = [line[2], line[3]];
@@ -133,7 +144,8 @@ function add_line(line){
 	for (node in graph){
 		for (idx_node2 in graph[node]){
 			node2 = graph[node][idx_node2];
-			if (node < node2){
+			if (parseInt(node) < parseInt(node2)){ //I hope that works now; there were cases where the stuff in the if condition was executed although node>node2, really weird, maybe some weird caching stuff I don't understand (like in the spectre attack, but maybe not)
+				//console.log(node,node2);//for checking if node < node2 (was not always the case without parseInt)
 				var edge = coordinates[node].concat(coordinates[node2]); //concatenate coordinates to format needed by intersection
 				var intersect = intersection(line, edge);
 				if (intersect != -1){
@@ -151,7 +163,7 @@ function add_line(line){
 		adjacent_edges.push(intersections_and_adjacent[i][1]);
 	}
 	new_edges = []
-	console.log("number of intersections: ", n);
+	// console.log("number of intersections: ", n);
 	if (n == 0){
 		indices[start_pos] = coordinates.length;
 		coordinates.push(start_pos);
@@ -162,11 +174,11 @@ function add_line(line){
 		graph.push([]);
 		graph[coordinates.length-2].push(coordinates.length-1);
 		graph[coordinates.length-1].push(coordinates.length-2);
-		console.log(graph);
+		// console.log(graph);
 		add_vertex();
 		add_vertex();
 		union(coordinates.length-1, coordinates.length-2);
-		return -1;
+		return [[[coordinates.length-2, coordinates.length-1]], []];//should fit the expected output
 	}
 	for (var i = 0; i < n; i++){
 		var current = coordinates.length;
@@ -181,9 +193,10 @@ function add_line(line){
 		//now delete the former adjacent edge from node1 to node2 and add the edges [node1, intersection] and [intersection, node2]
 		var node1,node2;
 		[node1,node2] = adjacent_edges[i];
-		//here sth did not work because of a weird thing. It works now, but be aware of that if there are errors in future.
-		graph[node1].splice(graph[node1].indexOf(node2),1);
-		graph[node2].splice(graph[node2].indexOf(node1),1);
+		var idx1 = index_of(graph[node1], node2);
+		var idx2 = index_of(graph[node2], node1);
+		graph[node1].splice(idx1,1);
+		graph[node2].splice(idx2,1);
 		graph[node1].push(current);
 		graph[current].push(node1);
 		graph[node2].push(current);
@@ -193,6 +206,8 @@ function add_line(line){
 		union(node1, current);//node1 and node2 should already be in the same set
 
 	}
+	//var new_edges_cp = _.cloneDeep(new_edges);
+	//console.log("edges with intersections at both sides: ", new_edges_cp);
 	if (start_pos != intersections[0]){ //chech so that there are no two nodes on the same coordinate (may still be a problem somewhere else)
 		indices[start_pos] = coordinates.length;
 		coordinates.push(start_pos);
@@ -211,9 +226,10 @@ function add_line(line){
 		graph[coordinates.length-1].push(indices[intersections[n-1]]);
 		add_vertex();
 	}
-	console.log(new_edges);
-	console.log(graph);
-	console.log(parent);
+	//console.log("All new edges: ", new_edges);
+	//console.log("Adjacent edges (without new split): ", adjacent_edges);
+	//console.log("Graph: ", graph);
+	// console.log(parent);
 	return [new_edges, adjacent_edges];
 }
 
@@ -362,3 +378,27 @@ function colorize(){
 
 	draw_current_canvas();
 }
+
+
+
+
+
+
+
+/*TODOS
+ - verify that the edges are correctly extracted from the line and that the graph is correct
+ - make check_new_face work (fix union-find structure?)
+ - make find_face work
+ - brainstorm how to best split the face (or how to best calculate the dual graph and then split the face based on that)
+ - implement the best method for splitting a face
+ - assign random colors to faces for now
+(test after each of those steps)
+*/
+
+
+
+
+
+
+
+

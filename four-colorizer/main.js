@@ -79,23 +79,26 @@ var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
-	//console.log("coordinates: ", coordinates);//printing coordinates
 	var new_edges = result[0];
 	var adjacent_edges = result[1];
 
 	var cnt = 0;
 	for(idx in new_edges) {
 		if (check_if_new_face(new_edges[idx])){
-			//TODO: Test and find mistakes: make sure union find works correctly (I think there is sth wrong); make sure find_face works and fix split face
-			//console.log(new_edges[idx]);
+			//TODO: Test and find mistakes: make sure find_face works and fix split face
+			
 			var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
+			console.log("new edge and face created: ", new_edges[idx], face_id);
 			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
-			union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 			cnt++;
 		}
+		union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 	}
-	console.log("This line creates ", cnt, " new faces.");
-	// console.log("faces:",faces);
+	//console.log("This line creates ", cnt, " new faces.");
+	//console.log("set of each vertex: ");
+	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x))); 
+	//console.log("coordinates: ", coordinates);
+	console.log("faces:",faces);
 
 	// Calculate color configuration
 	colorize();
@@ -177,7 +180,7 @@ function add_line(line){
 		// console.log(graph);
 		add_vertex();
 		add_vertex();
-		union(coordinates.length-1, coordinates.length-2);
+		//union(coordinates.length-1, coordinates.length-2); //union them later
 		return [[[coordinates.length-2, coordinates.length-1]], []];//should fit the expected output
 	}
 	for (var i = 0; i < n; i++){

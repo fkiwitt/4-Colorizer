@@ -63,7 +63,11 @@ $(canvas).on('mousemove', function(e) {
 });
 
 var coordinates = [[0,0],[800,0],[800,500],[0,500]];
-var indices = {"[0,0]":0, "[800,0]":1, "[800,500]":2, "[0,500]":3};//change again!!!
+var indices = {};
+indices[[0,0]] = 0;
+indices[[800,0]] = 1;
+indices[[800,500]] = 2;
+indices[[0,500]] = 3;
 // initial graph
 var graph = [
 	[1,3],
@@ -76,6 +80,9 @@ var faces = [ [0,1,2,3] ];//means for example that the first face has the edges 
 var color_configuration = [ 0, 1 ];
 var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
+var visited = [];
+var dual_graph = [[]]; //TODO: the greatest face (that exists since the beginning) should be at idx 1 not 0
+
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
@@ -87,8 +94,8 @@ function on_draw_line(current_stroke){
 		if (check_if_new_face(new_edges[idx])){
 			//TODO: Test and find mistakes: make sure find_face works and fix split face
 			
-			var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
-			console.log("new edge and face created: ", new_edges[idx], face_id);
+			//var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
+			//console.log("new edge and face created: ", new_edges[idx], face_id);
 			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
 			cnt++;
 		}
@@ -98,10 +105,22 @@ function on_draw_line(current_stroke){
 	//console.log("set of each vertex: ");
 	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x))); 
 	//console.log("coordinates: ", coordinates);
-	console.log("faces:",faces);
-
+	console.log("graph: ", graph);
+	faces.splice(0);
+	calc_dual_graph();
+	console.log("faces: ",faces);
+	console.log("dual_graph: ", dual_graph);
+	var visited_components = new Set();
+	/*for (var i = 0; i < coordinates.length; i++){
+		if (graph[i].length > 1 && !visited_components.has(find_set(i))){
+			var hull = convex_hull(i);
+			var hull_points = hull.map((a) => indices[[a.x,a.y]]);//not sure if that works
+			console.log("Convex hull: ", hull, hull_points);
+			visited_components.add(find_set(i));
+		}
+	}*/
 	// Calculate color configuration
-	colorize();
+	//colorize();
 }
 
 
@@ -235,6 +254,150 @@ function add_line(line){
 	// console.log(parent);
 	return [new_edges, adjacent_edges];
 }
+
+
+/////////////////////////////// calculating faces and dual graph ///////////////////////////////////
+
+function dist(vec){
+	return Math.sqrt(Math.pow(vec[0],2)+Math.pow(vec[1],2));
+}
+
+function find_in_array(arr,x){
+	for (i in arr){
+		if (arr[i] == x){
+			return i;
+		}
+	}
+	return -1;
+}
+
+//actually does not work with normal graph yet, you would need to remove the nodes with degree one (and the coresponding edges)
+function dfs_left(a,b){//a is previous, b is current
+	console.log("a,b: ",a,b);
+	var rep_idx = find_in_array(visited,b);
+	if (rep_idx != -1){
+		visited.splice(0,rep_idx);//should work but I may have miscalculated
+		return true;
+	}
+	var A = coordinates[a];
+	var B = coordinates[b];
+	var AB = [B[0]-A[0], B[1]-A[1]];
+	var mintheta = 10.0;
+	var leftest = -1;
+	for (i in graph[b]){
+		c = graph[b][i];
+		if (c != a && graph[c].length >= 2){//only look at deg>=2 nodes
+			var C = coordinates[c];
+			var BC = [C[0]-B[0], C[1]-B[1]];
+			var cross = AB[0]*BC[1] - AB[1]*BC[0];
+			var phi = Math.acos((AB[0]*BC[0]+AB[1]+BC[1])/(dist(AB)*dist(BC)));//returns sth between 0 and pi
+			var theta = 20.0;
+			if (cross == 0){
+				theta = Math.PI - phi;
+			}
+			else if (cross > 0){//phi < pi
+				theta = Math.PI - phi;
+			}
+			else { //actually phi is greater than pi, but acos outputs 2*pi - phi instead (I guess)
+				theta = Math.PI + phi;
+			}
+			//console.log("AB, BC, cross, phi, theta: ", AB, BC, cross, phi, theta);
+			if (theta < mintheta){
+				leftest = c;
+				mintheta = theta;
+			}
+		}
+	}
+	if (leftest == -1){//edge does not lead into circle
+		return false;
+	}
+	visited.push(b);
+	return dfs_left(b,leftest);
+} 
+
+
+function check_if_face_exists(face){//checks if a newly calculated face exists;
+	for (i in faces){
+		face2 = faces[i];
+		if (face2.length != face.length){
+			continue;
+		}
+		var fits = true;
+		for (j in face2){
+			if (face[j] != face2[j]){
+				fits = false;
+				break;
+			}
+		}
+		if (fits){
+			return true;
+		}
+	}
+	return false;
+}
+
+
+var faces_of_edges = {};
+
+function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of planarity)
+	for (var i = 0; i < graph.length; i++){
+		if (graph[i].length == 1){
+			continue;
+		}
+		for (var j = 0; j < graph[i].length; j++){
+			visited.splice(0);
+			console.log("Now new DFS: ", i, j, graph[i][j]);
+			visited.push(i);
+			if (!dfs_left(i, graph[i][j])){
+				continue;
+			}
+			//find min in visited array
+			var min = Math.min.apply(Math, visited);
+			var idx = index_of(visited, min);
+			//maybe rotate array to min
+			//console.log("visited: ", visited);
+			var rotated = visited.splice(idx).concat(visited.splice(0,idx));//may not work if visited is spliced directly, but it should probably still work
+			//maybe reverse the order (reverse visited[1:] (?))
+			var face = rotated;
+			if (rotated[1] > rotated[rotated.length-1]){
+				face = [min].concat(rotated.splice(1).reverse());
+			}
+			console.log(face, check_if_face_exists(face));
+			if (!check_if_face_exists(face)){
+				face_idx = faces.length;
+				faces.push(face);
+				dual_graph.push([]);
+				var n = face.length;
+				for (var k = 0; k < face.length; k++){
+					edge = [face[k], face[(k+1)%5]];
+					if (edge in faces_of_edges){
+						f_id = faces_of_edges[edge][0];//there should only be one entry
+						dual_graph[face_idx].push(f_id);
+						dual_graph[f_id].push(face_idx);
+						//delete the edge between f_id and the outside (face 0)
+						dual_graph[0].splice(index_of(dual_graph[0], f_id),1);
+						dual_graph[f_id].splice(index_of(dual_graph[f_id], 0),1);
+					}
+					else {
+						dual_graph[face_idx].push(0);//maybe I need seperate 'outsides' (idx 0 faces) for different components, but I think it should be fine
+						dual_graph[0].push(face_idx);
+					}
+					//add the face to faces_of_edges for each edge in the face
+					if (edge in faces_of_edges){
+						faces_of_edges[edge].push(face_idx);
+					}
+					else {
+						faces_of_edges[edge] = [face_idx];
+					}
+				}
+			}
+		}
+	}
+}
+
+////////////////////////////////////////////////////////////////////
+
+
 
 
 var reference_point = [-371,-731];//just some random point outside (random so that it may be unlikely to cut exactly through a vertex, which would ruin the algorithm)

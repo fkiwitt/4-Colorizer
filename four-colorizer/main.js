@@ -93,7 +93,7 @@ function on_draw_line(current_stroke){
 	for(idx in new_edges) {
 		if (check_if_new_face(new_edges[idx])){
 			//TODO: Test and find mistakes: make sure find_face works and fix split face
-			
+
 			//var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
 			//console.log("new edge and face created: ", new_edges[idx], face_id);
 			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
@@ -313,7 +313,7 @@ function dfs_left(a,b){//a is previous, b is current
 	}
 	visited.push(b);
 	return dfs_left(b,leftest);
-} 
+}
 
 
 function check_if_face_exists(face){//checks if a newly calculated face exists;
@@ -562,7 +562,39 @@ function colorize(){
 */
 
 
+// Calculate components of dual graph
 
+function get_components(){
+	var components = [];
+
+	for(v in dual_graph){
+		for(component in components){
+			if(components[component].includes(v)){
+				continue;
+			}
+		}
+
+		var new_component = bfs(v, []);
+		components.push(new_component);
+	}
+
+	return components;
+}
+
+function bfs(v){
+	var nodes = [];
+	for(adjacent_node in dual_graph[v]){
+		if(!nodes.includes(adjacent_node)){
+			nodes.push(adjacent_node);
+			var secondary_adjacent_nodes = bfs(adjacent_node, nodes);
+			nodes.concat(secondary_adjacent_nodes);
+		}
+	}
+}
+
+
+
+// Calculate coloring
 
 function calculate_color_configuration(graph){
 	var coloring = Array(graph.length).fill(-1);

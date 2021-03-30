@@ -103,7 +103,7 @@ function on_draw_line(current_stroke){
 	}
 	//console.log("This line creates ", cnt, " new faces.");
 	//console.log("set of each vertex: ");
-	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x))); 
+	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x)));
 	//console.log("coordinates: ", coordinates);
 	console.log("graph: ", graph);
 	faces.splice(0);
@@ -564,7 +564,31 @@ function colorize(){
 
 
 
+function calculate_color_configuration(graph){
+	var coloring = Array(graph.length).fill(-1);
+	coloring = recursive_color(graph, coloring, 0);
+	return coloring;
+}
+
+function recursive_color(graph, coloring, v){
+	if(v == graph.length){
+		return coloring;
+	}
+
+	for(var i = 0; i < 4; i++){
+		var temp_coloring = JSON.parse(JSON.stringify(coloring));
+		temp_coloring[v] = i;
+		if(check_coloring_for(graph, temp_coloring, v) != false){
+			return recursive_color(graph, temp_coloring, (v+1));
+		}
+	}
+	return false;
+}
 
 
-
-
+function check_coloring_for(node, color, coloring){
+	for(v in graph[node]){
+		if(coloring[graph[node][v]] ==  color){ return false; }
+	}
+	return true;
+}

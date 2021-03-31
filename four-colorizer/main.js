@@ -574,23 +574,89 @@ function get_components(){
 			}
 		}
 
-		var new_component = bfs(v, []);
+		var new_component = dfs(v, []);
 		components.push(new_component);
 	}
 
 	return components;
 }
 
-function bfs(v){
+function dfs(v){
 	var nodes = [];
 	for(adjacent_node in dual_graph[v]){
 		if(!nodes.includes(adjacent_node)){
 			nodes.push(adjacent_node);
-			var secondary_adjacent_nodes = bfs(adjacent_node, nodes);
+			var secondary_adjacent_nodes = dfs(adjacent_node, nodes);
 			nodes.concat(secondary_adjacent_nodes);
 		}
 	}
 }
+
+
+
+// Creating component graph
+
+function calculate_components_graph(components){
+	var component_graph = Array(components.length).fill([]);
+
+	for(face in faces){
+		for(component in components){
+			if(is_in_face(components[component][0], faces[face])){
+				component_graph[component].push(get_component_for(faces[face][0], components));
+			}
+		}
+	}
+
+	// Graph clean-up
+	for(node in component_graph){
+		remove_inferior_nodes(node, component_graph);
+	}
+}
+
+
+function remove_inferior_nodes(node, component_graph){
+	var nodes_to_delete = [];
+
+	for(adjacent_node in component_graph[node]){
+		nodes_to_delete.concat(component_graph[adjacent_node]);
+	}
+
+	for(inferior_node in nodes_to_delete){
+		component_graph[node].remove(nodes_to_delete[inferior_node]);
+	}
+
+	nodes_to_delete.concat(component_graph[node]);
+	return nodes_to_delete;
+}
+
+
+function is_in(face, v){
+	var intersections = 0;
+
+	var v_coordinates = coordinates[v];
+	var reference_line = [[-1, -1], v_coordinates];
+
+	for(edge in face){
+		var border_line = [coordinates(face[edge % face.length]), coordinates(face[(edge + 1) % face.length])];
+		var border_intersection = intersection(border_line, reference_line);
+		if(border_intersection != -1){ //?
+			intersections += 1;
+		}
+	}
+
+	return (intersections % 2) == 1;
+}
+
+
+function get_component_for(node, components){
+	for(component in components){
+		if(components[component].includes(node)){
+			return component;
+		}
+	}
+	return -1;
+}
+
 
 
 

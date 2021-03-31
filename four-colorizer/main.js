@@ -81,7 +81,7 @@ var color_configuration = [ 0, 1 ];
 var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 var visited = [];
-var dual_graph = [[]]; //TODO: the greatest face (that exists since the beginning) should be at idx 1 not 0
+var dual_graph = [[]]; //dual_graph[i] has the connections of the face with index i; dual_graph[n] are the connections to the outside
 
 
 function on_draw_line(current_stroke){
@@ -105,8 +105,11 @@ function on_draw_line(current_stroke){
 	//console.log("set of each vertex: ");
 	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x)));
 	//console.log("coordinates: ", coordinates);
-	console.log("graph: ", graph);
+	//console.log("graph: ", graph);
+	faces_of_edges = {};
 	faces.splice(0);
+	dual_graph.splice(0);
+	dual_graph.push([]);
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -271,9 +274,31 @@ function find_in_array(arr,x){
 	return -1;
 }
 
-//actually does not work with normal graph yet, you would need to remove the nodes with degree one (and the coresponding edges)
+
+function calc_theta(AB,BC){
+	AB = [Math.round(1000000*AB[0])/1000000,Math.round(1000000*AB[1])/1000000];
+	BC = [Math.round(1000000*BC[0])/1000000,Math.round(1000000*BC[1])/1000000];
+	var cross = Math.round(1000000*(AB[0]*BC[1] - AB[1]*BC[0]))/1000000;
+	var phi = Math.acos(Math.max(-1,Math.min(1,Math.round(1000000*((AB[0]*BC[0]+AB[1]*BC[1])/(dist(AB)*dist(BC))))/1000000)));//returns sth between 0 and pi
+	//console.log((AB[0]*BC[0]+AB[1]*BC[1])/(dist(AB)*dist(BC)), cross, phi);
+	var theta = 20.0;
+	if (cross == 0){
+		theta = Math.PI - phi;
+	}
+	else if (cross > 0){//phi < pi
+		theta = Math.PI - phi;
+	}
+	else { //actually phi is greater than pi, but acos outputs 2*pi - phi instead (I guess)
+		theta = Math.PI + phi;
+	}
+	//console.log("AB, BC, theta: ", AB, BC, theta);
+	return theta;
+}
+
+
+
 function dfs_left(a,b){//a is previous, b is current
-	console.log("a,b: ",a,b);
+	//console.log("a,b: ",a,b);
 	var rep_idx = find_in_array(visited,b);
 	if (rep_idx != -1){
 		visited.splice(0,rep_idx);//should work but I may have miscalculated
@@ -337,16 +362,60 @@ function check_if_face_exists(face){//checks if a newly calculated face exists;
 }
 
 
+function calc_polygon_area(face){
+	var sum = 0.0;
+	var n = face.length;
+	sum += coordinates[face[n-1]][0]*coordinates[face[0]][1] - coordinates[face[0]][0]*coordinates[face[n-1]][1];
+	for (var i = 0; i < n-1; i++){
+		sum += coordinates[face[i]][0]*coordinates[face[i+1]][1] - coordinates[face[i+1]][0]*coordinates[face[i]][1];
+	}
+	var area = Math.abs(sum/2);
+	return area;
+}
+
+hulls = {};//the hull of each component (component id as key)
+cmpnt_areas = {};//cmpnt id as key
+function calc_hulls(){
+	for (var i = 0; i < faces.length; i++){
+		var face = faces[i];
+		var cmpnt = find_set(face[0]);
+		if (!(cmpnt in cmpnt_areas)){
+			cmpnt_areas[cmpnt] = calc_polygon_area(face);
+			hulls[cmpnt] = face;
+		} else {
+			if (calc_polygon_area(face) > cmpnt_areas[cmpnt]){
+				cmpnt_areas[cmpnt] = calc_polygon_area(face);
+				hulls[cmpnt] = face;
+			}
+		}
+	}
+}
+
+
+cnt_faces = {}//component id is key //there is no entry for a component without faces
+function cnt_faces_of_cmpnts(){//including the hull
+	for (var i = 0; i < faces.length; i++){
+		var cmpnt = find_set(faces[i][0]);
+		if (!(cmpnt in cnt_faces)){
+			cnt_faces[cmpnt] = 1;
+		}
+		else {
+			cnt_faces[cmpnt]++;
+		}
+	}
+}
+
 var faces_of_edges = {};
 
-function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of planarity)
+//maybe make that one calc_faces and then create a new method for finding the dual graph from the given faces
+function calc_faces(){//should be O(m^2) (which is about O(n^2) because of planarity)
 	for (var i = 0; i < graph.length; i++){
 		if (graph[i].length == 1){
 			continue;
 		}
 		for (var j = 0; j < graph[i].length; j++){
 			visited.splice(0);
-			console.log("Now new DFS: ", i, j, graph[i][j]);
+			//console.log("Now new DFS: ", i, j, graph[i][j]);
 			visited.push(i);
 			if (!dfs_left(i, graph[i][j])){
 				continue;
@@ -362,35 +431,76 @@ function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of 
 			if (rotated[1] > rotated[rotated.length-1]){
 				face = [min].concat(rotated.splice(1).reverse());
 			}
-			console.log(face, check_if_face_exists(face));
-			if (!check_if_face_exists(face)){
+			//console.log(face, check_if_face_exists(face));
+			if (!check_if_face_exists(face)){ //maybe delete all the dual_graph stuff from here
 				face_idx = faces.length;
 				faces.push(face);
-				dual_graph.push([]);
-				var n = face.length;
-				for (var k = 0; k < face.length; k++){
-					edge = [face[k], face[(k+1)%5]];
-					if (edge in faces_of_edges){
-						f_id = faces_of_edges[edge][0];//there should only be one entry
-						dual_graph[face_idx].push(f_id);
-						dual_graph[f_id].push(face_idx);
-						//delete the edge between f_id and the outside (face 0)
-						dual_graph[0].splice(index_of(dual_graph[0], f_id),1);
-						dual_graph[f_id].splice(index_of(dual_graph[f_id], 0),1);
-					}
-					else {
-						dual_graph[face_idx].push(0);//maybe I need seperate 'outsides' (idx 0 faces) for different components, but I think it should be fine
-						dual_graph[0].push(face_idx);
-					}
-					//add the face to faces_of_edges for each edge in the face
-					if (edge in faces_of_edges){
-						faces_of_edges[edge].push(face_idx);
-					}
-					else {
-						faces_of_edges[edge] = [face_idx];
-					}
-				}
 			}
+		}
+	}
+	//delete the hulls (if they are not the only faces of the component)
+	cnt_faces_of_cmpnts();
+	calc_hulls();
+	var new_faces = [];
+	for (var i = 0; i < faces.length; i++){
+		var face = faces[i];
+		var cmpnt = find_set(faces[i][0]);
+		if (!(face == hulls[cmpnt] && cnt_faces[cmpnt] != 1)){//not sure if list comparison works
+			new_faces.push(face);
+		}
+	}
+	faces = new_faces;//hopefully that also works outside of the function scope, otherwise try deepcopy
+}
+
+
+var faces_of_edges = {};
+function calc_dual_graph(as_multigraph=false){
+	var edges = new Set();//only contains edges that appear in a face
+	calc_faces();
+	//var edges_of_faces = [];
+	for (var i = 0; i < faces.length; i++){
+		dual_graph.push([]);
+		var f1 = faces[i];
+		var edge = [Math.min(f1[f1.length-1],f1[0]),Math.max(f1[f1.length-1],f1[0])];
+		//edges_of_faces.push([edge])
+		if (!(edge in faces_of_edges)){
+			faces_of_edges[edge] = [];
+		}
+		faces_of_edges[edge].push(i);
+		if (!edges.has(edge)){//hopefully does not compare by reference
+			edges.add(edge);
+		}
+		for (var j = 0; j < f1.length-1; j++){
+			edge = [Math.min(f1[j],f1[j+1]),Math.max(f1[j],f1[j+1])];
+			if (!(edge in faces_of_edges)){
+				faces_of_edges[edge] = [];
+			}
+			faces_of_edges[edge].push(i);
+			if (!edges.has(edge)){
+				edges.add(edge);
+			}
+			//edges_of_faces[i].push(edge);
+		}
+		//edges_of_faces[i].sort();//just for (unneeded) performance (for quicker intersection calculation)
+	}
+	//finding which faces share edges
+	var num_faces = faces.length;
+	for (let edge of edges){
+		console.log("edge, facesOfEdge: ", edge, faces_of_edges[edge]);
+		if (faces_of_edges[edge].length == 1){
+			if (!(dual_graph[faces_of_edges[edge][0]].includes(num_faces)) || as_multigraph){
+				dual_graph[faces_of_edges[edge][0]].push(num_faces);
+				dual_graph[num_faces].push(faces_of_edges[edge][0]);
+			}
+		}
+		else if (faces_of_edges[edge].length == 2){
+			if (!(dual_graph[faces_of_edges[edge][0]].includes(faces_of_edges[edge][1])) || as_multigraph){
+				dual_graph[faces_of_edges[edge][0]].push(faces_of_edges[edge][1]);
+				dual_graph[faces_of_edges[edge][1]].push(faces_of_edges[edge][0]);
+			}
+		}
+		else {
+			console.log("Something is wrong! Faces of edge ", edge, ": ", faces_of_edges[edge]);
 		}
 	}
 }

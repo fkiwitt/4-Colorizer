@@ -611,10 +611,6 @@ function colorize(){
 }
 
 
-function colorize2(){//color in the correct order
-
-}
-
 // Calculate components of dual graph
 
 function get_components(){

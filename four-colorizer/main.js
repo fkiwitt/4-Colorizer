@@ -129,8 +129,8 @@ function on_draw_line(current_stroke){
 	console.log(color_configuration);
 	var components = get_components();
 	console.log("components", components);
-	// var component_graph = calculate_components_graph(components);
-	// console.log("components graph:", component_graph)
+	var component_graph = calculate_components_graph(components);
+	console.log("components graph:", component_graph)
 	colorize();
 }
 
@@ -615,7 +615,7 @@ function get_components(){
 			if(components[i].includes(parseInt(v))){
 				respective_component_already_discovered = true;
 				break;
-			}else{ console.log("not included:", parseInt(v), components[i]); }
+			}
 		}
 		if(respective_component_already_discovered){
 			continue;
@@ -630,8 +630,7 @@ function get_components(){
 
 function dfs(v, nodes){
 	for(adjacent_node of graph[v]){
-		console.log("already collected:", nodes);
-		if(!nodes.includes(adjacent_node)){
+		if(!nodes.includes(parseInt(adjacent_node))){
 			nodes.push(parseInt(adjacent_node));
 			dfs(adjacent_node, nodes);
 		}
@@ -650,16 +649,21 @@ function calculate_components_graph(components){
 
 	for(face in faces){
 		for(component in components){
-			if(is_in(faces[face], components[component][0])){
-				component_graph[component].push(get_component_for(faces[face][0], components));
+			if(!faces[face].includes(components[component][0])){
+				if(is_in(faces[face], components[component][0])){
+					var face_component = get_component_for(faces[face][0], components);
+					if(!component_graph[component].includes(face_component)){
+						component_graph[component].push(face_component);
+					}
+				}
 			}
 		}
 	}
 
 	// Graph clean-up
-	for(node in component_graph){
-		remove_inferior_nodes(node, component_graph);
-	}
+	// for(node in component_graph){
+	// 	remove_inferior_nodes(node, component_graph);
+	// }
 
 	return component_graph;
 }
@@ -669,7 +673,7 @@ function remove_inferior_nodes(node, component_graph){
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete.concat(remove_inferior_nodes(adjacent_node, component_graph));
+		nodes_to_delete = nodes_to_delete.concat(remove_inferior_nodes(adjacent_node, component_graph));
 	}
 
 	var new_adjacency = [];
@@ -688,7 +692,7 @@ function remove_inferior_nodes(node, component_graph){
 
 	component_graph[node] = new_adjacency;
 
-	nodes_to_delete.concat(component_graph[node]);
+	nodes_to_delete = nodes_to_delete.concat(component_graph[node]);
 	return nodes_to_delete;
 }
 
@@ -700,12 +704,14 @@ function is_in(face, v){
 	var reference_line = [[-1, -1], v_coordinates];
 
 	for(edge in face){
-		var border_line = [coordinates[face[edge % face.length]], coordinates[face[(edge + 1) % face.length]]];
+		var border_line = [coordinates[face[edge]], coordinates[face[(edge + 1) % face.length]]];
 		var border_intersection = intersection(border_line, reference_line);
+		// console.log("intersection:", border_line, reference_line, border_intersection);
 		if(border_intersection != -1){ //?
 			intersections += 1;
 		}
 	}
+	// console.log("intersections:", intersections);
 
 	return (intersections % 2) == 1;
 }

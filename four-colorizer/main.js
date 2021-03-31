@@ -608,38 +608,6 @@ function intersection(path1, path2){
 	}
 }
 
-function split_face(face_id, new_edge, adjacent_edges){
-	var polygon = faces[face_id];
-	var face1 = [];
-	var face2 = [];
-
-	var after_edge = false;
-	for(node in polygon){
-		var element = polygon[node];
-		var both = false;
-
-		for(adjacent_edge in adjacent_edges){
-			for(adjacent_node in adjacent_edges[adjacent_edge]){
-				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
-					after_edge = !after_edge;
-					face1.push(new_edge[adjacent_node]);
-					face2.push(new_edge[adjacent_node]);
-					adjacent_edges[adjacent_edge] = [-1,-1];
-				}
-			}
-		}
-
-		if(!after_edge){
-			face1.push(element);
-		}else{
-			face2.push(element);
-		}
-	}
-
-	faces[face_id] = face1;
-	faces.push(face2);
-}
-
 function colorize(){
 	for(face in faces){
 		ctx.fillStyle = colors[color_configuration[face]];

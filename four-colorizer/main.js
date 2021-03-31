@@ -505,7 +505,6 @@ function intersection(path1, path2){
 	var grace = 0; //set to 20 for special debugging
 
 	if(path1 == path2){
-		return -1;
 	}
 	var min_x1 = Math.min(path1[0], path1[2]);
 	var max_x1 = Math.max(path1[0], path1[2]);
@@ -545,7 +544,7 @@ function intersection(path1, path2){
 	}
 
 	if (does_intersect == false){
-		return -1;
+		return [-1, []];
 	}
 
 	var intersection_x = (c2-c1)/(m1-m2);
@@ -554,7 +553,7 @@ function intersection(path1, path2){
 	if(intersection_x >= (min_x1-grace) && intersection_x <= (max_x1+grace) && intersection_x >= (min_x2-grace) && intersection_x <= (max_x2+grace) && intersection_y >= (min_y1-grace) && intersection_y <= (max_y1+grace) && intersection_y >= (min_y2-grace) && intersection_y <= (max_y2+grace)){
 		return [intersection_x, intersection_y];
 	}else{
-		return -1;
+		return [-1, []];
 	}
 }
 

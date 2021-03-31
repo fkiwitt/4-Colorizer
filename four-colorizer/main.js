@@ -497,28 +497,6 @@ function calc_dual_graph(as_multigraph=false){
 
 ////////////////////////////////////////////////////////////////////
 
-/*unneeded
-function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
-	if (find_set(new_edge[0]) == find_set(new_edge[1])){
-		return true;
-	}
-	return false;
-}
-
-function find_face(new_edge){
-	//calculate which face will be splitted
-	p1 = coordinates[new_edge[0]];
-	p2 = coordinates[new_edge[1]];
-	mid_point = [(p1[0]+p2[0])/2, (p1[1],p2[1])/2];
-	for (i in faces){
-		face = faces[i];
-		if (num_intersections_from_outside(mid_point, face)%2 == 1){//if sth fails check if there really is exactly one face with uneven intersections
-			return i;
-		}
-	}
-	console.log("something went wrong; could not find face that is split")
-}
-*/
 
 function intersection(path1, path2){
 	var grace = 0; //set to 20 for special debugging

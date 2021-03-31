@@ -123,9 +123,10 @@ function on_draw_line(current_stroke){
 		}
 	}*/
 	// Calculate color configuration
-	// var compontents_graph = calculate_components_graph();
 	color_configuration = calculate_color_configuration();
 	console.log(color_configuration);
+	var components = get_components();
+	var compontent_graph = calculate_components_graph(components);
 	colorize();
 }
 
@@ -552,7 +553,7 @@ function find_face(new_edge){
 
 
 function intersection(path1, path2){
-	var grace = 0; //set to 20 for special debugging
+	var grace = 10; //set to 20 for special debugging
 
 	if(path1 == path2){
 		return -1;
@@ -649,28 +650,34 @@ function get_components(){
 	var components = [];
 
 	for(v in dual_graph){
-		for(component in components){
-			if(components[component].includes(v)){
-				continue;
+		var respective_component_already_discovered = false;
+		console.log(components);
+		for(var i = 0; i < components.length; i+= 1){//component in components){
+			if(components[i].includes(v)){
+				respective_component_already_discovered = true;
+				break;
 			}
 		}
-
-		var new_component = dfs(v, []);
-		components.push(new_component);
+		if(respective_component_already_discovered){
+			continue;
+		}else{
+			var new_component = dfs(v, []);
+			components.push(new_component);
+		}
 	}
 
 	return components;
 }
 
-function dfs(v){
-	var nodes = [];
-	for(adjacent_node in dual_graph[v]){
+function dfs(v, nodes){
+	for(adjacent_node of dual_graph[v]){
 		if(!nodes.includes(adjacent_node)){
 			nodes.push(adjacent_node);
 			var secondary_adjacent_nodes = dfs(adjacent_node, nodes);
-			nodes.concat(secondary_adjacent_nodes);
+			nodes = nodes.concat(secondary_adjacent_nodes);
 		}
 	}
+	return nodes
 }
 
 
@@ -682,7 +689,7 @@ function calculate_components_graph(components){
 
 	for(face in faces){
 		for(component in components){
-			if(is_in_face(components[component][0], faces[face])){
+			if(is_in(faces[face], components[component][0])){
 				component_graph[component].push(get_component_for(faces[face][0], components));
 			}
 		}
@@ -692,6 +699,8 @@ function calculate_components_graph(components){
 	for(node in component_graph){
 		remove_inferior_nodes(node, component_graph);
 	}
+
+	return component_graph;
 }
 
 
@@ -730,7 +739,7 @@ function is_in(face, v){
 	var reference_line = [[-1, -1], v_coordinates];
 
 	for(edge in face){
-		var border_line = [coordinates(face[edge % face.length]), coordinates(face[(edge + 1) % face.length])];
+		var border_line = [coordinates[face[edge % face.length]], coordinates[face[(edge + 1) % face.length]]];
 		var border_intersection = intersection(border_line, reference_line);
 		if(border_intersection != -1){ //?
 			intersections += 1;

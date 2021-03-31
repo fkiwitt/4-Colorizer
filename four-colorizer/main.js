@@ -271,25 +271,7 @@ function find_in_array(arr,x){
 	return -1;
 }
 
-
-function calc_theta(AB,BC){
-	var cross = AB[0]*BC[1] - AB[1]*BC[0];
-	var phi = Math.acos((AB[0]*BC[0]+AB[1]*BC[1])/(dist(AB)*dist(BC)));//returns sth between 0 and pi
-	var theta = 20.0;
-	if (cross == 0){
-		theta = Math.PI - phi;
-	}
-	else if (cross > 0){//phi < pi
-		theta = Math.PI - phi;
-	}
-	else { //actually phi is greater than pi, but acos outputs 2*pi - phi instead (I guess)
-		theta = Math.PI + phi;
-	}
-	//console.log("AB, BC, theta: ", AB, BC, theta);
-	return theta;
-}
-
-
+//actually does not work with normal graph yet, you would need to remove the nodes with degree one (and the coresponding edges)
 function dfs_left(a,b){//a is previous, b is current
 	console.log("a,b: ",a,b);
 	var rep_idx = find_in_array(visited,b);
@@ -307,7 +289,18 @@ function dfs_left(a,b){//a is previous, b is current
 		if (c != a && graph[c].length >= 2){//only look at deg>=2 nodes
 			var C = coordinates[c];
 			var BC = [C[0]-B[0], C[1]-B[1]];
-			var theta = calc_theta(AB,BC);
+			var cross = AB[0]*BC[1] - AB[1]*BC[0];
+			var phi = Math.acos((AB[0]*BC[0]+AB[1]+BC[1])/(dist(AB)*dist(BC)));//returns sth between 0 and pi
+			var theta = 20.0;
+			if (cross == 0){
+				theta = Math.PI - phi;
+			}
+			else if (cross > 0){//phi < pi
+				theta = Math.PI - phi;
+			}
+			else { //actually phi is greater than pi, but acos outputs 2*pi - phi instead (I guess)
+				theta = Math.PI + phi;
+			}
 			//console.log("AB, BC, cross, phi, theta: ", AB, BC, cross, phi, theta);
 			if (theta < mintheta){
 				leftest = c;
@@ -343,53 +336,9 @@ function check_if_face_exists(face){//checks if a newly calculated face exists;
 	return false;
 }
 
+
 var faces_of_edges = {};
 
-function calc_polygon_area(face){
-	var sum = 0.0;
-	var n = face.length;
-	sum += coordinates[face[n-1]][0]*coordinates[face[0]][1] - coordinates[face[0]][0]*coordinates[face[n-1]][1];
-	for (var i = 0; i < n-1; i++){
-		sum += coordinates[face[i]][0]*coordinates[face[i+1]][1] - coordinates[face[i+1]][0]*coordinates[face[i]][1];
-	}
-	var area = Math.abs(sum/2);
-	return area;
-}
-
-hulls = {};//the hull of each component (component id as key)
-cmpnt_areas = {};//cmpnt id as key
-function calc_hulls(){
-	for (var i = 0; i < faces.length; i++){
-		var face = faces[i];
-		var cmpnt = find_set(face[0]);
-		if (!(cmpnt in cmpnt_areas)){
-			cmpnt_areas[cmpnt] = calc_polygon_area(face);
-			hulls[cmpnt] = face;
-		} else {
-			if (calc_polygon_area(face) > cmpnt_areas[cmpnt]){
-				cmpnt_areas[cmpnt] = calc_polygon_area(face);
-				hulls[cmpnt] = face;
-			}
-		}
-	}
-}
-
-
-cnt_faces = {}//component id is key //there is no entry for a component without faces
-function cnt_faces_of_cmpnts(){//including the hull
-	for (var i = 0; i < faces.length; i++){
-		var cmpnt = find_set(faces[i][0]);
-		if (!(cmpnt in cnt_faces)){
-			cnt_faces[cmpnt] = 1;
-		}
-		else {
-			cnt_faces[cmpnt]++;
-		}
-	}
-}
-
-
-//maybe make that one calc_faces and then create a new method for finding the dual graph from the given faces
 function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of planarity)
 	for (var i = 0; i < graph.length; i++){
 		if (graph[i].length == 1){
@@ -414,7 +363,7 @@ function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of 
 				face = [min].concat(rotated.splice(1).reverse());
 			}
 			console.log(face, check_if_face_exists(face));
-			if (!check_if_face_exists(face)){ //maybe delete all the dual_graph stuff from here
+			if (!check_if_face_exists(face)){
 				face_idx = faces.length;
 				faces.push(face);
 				dual_graph.push([]);
@@ -444,19 +393,6 @@ function calc_dual_graph(){//should be O(m^2) (which is about O(n^2) because of 
 			}
 		}
 	}
-	//delete the hulls (if they are not the only faces of the component)
-	cnt_faces_of_cmpnts();
-	calc_hulls();
-	var new_faces = [];
-	for (var i = 0; i < faces.length; i++){
-		var face = faces[i];
-		var cmpnt = find_set(faces[i][0]);
-		if (!(face == hulls[cmpnt] && cnt_faces[cmpnt] != 1)){//not sure if list comparison works
-			new_faces.push(face);
-		}
-	}
-	faces = new_faces;//hopefully that also works outside of the function scope, otherwise try deepcopy
-	
 }
 
 ////////////////////////////////////////////////////////////////////
@@ -610,6 +546,22 @@ function colorize(){
 }
 
 
+
+
+
+
+
+/*TODOS
+ - verify that the edges are correctly extracted from the line and that the graph is correct
+ - make check_new_face work (fix union-find structure?)
+ - make find_face work
+ - brainstorm how to best split the face (or how to best calculate the dual graph and then split the face based on that)
+ - implement the best method for splitting a face
+ - assign random colors to faces for now
+(test after each of those steps)
+*/
+
+
 // Calculate components of dual graph
 
 function get_components(){
@@ -737,6 +689,7 @@ function topsort(v, component_graph, order){
 
 
 // Calculate coloring
+
 function calculate_color_configuration(graph){
 	var coloring = Array(graph.length).fill(-1);
 	coloring = recursive_color(graph, coloring, 0);

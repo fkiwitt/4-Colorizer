@@ -102,8 +102,6 @@ function on_draw_line(current_stroke){
 		union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 	}
 	//console.log("This line creates ", cnt, " new faces.");
-	//console.log("set of each vertex: ");
-	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x)));
 	//console.log("coordinates: ", coordinates);
 	//console.log("graph: ", graph);
 	faces_of_edges = {};
@@ -113,6 +111,10 @@ function on_draw_line(current_stroke){
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
+	//calc_hirarchy();
+	//console.log("set of each vertex: ");
+	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x)));
+	//console.log(cmpnt_graph);
 	var visited_components = new Set();
 	/*for (var i = 0; i < coordinates.length; i++){
 		if (graph[i].length > 1 && !visited_components.has(find_set(i))){
@@ -318,18 +320,7 @@ function dfs_left(a,b){//a is previous, b is current
 		if (c != a && graph[c].length >= 2){//only look at deg>=2 nodes
 			var C = coordinates[c];
 			var BC = [C[0]-B[0], C[1]-B[1]];
-			var cross = AB[0]*BC[1] - AB[1]*BC[0];
-			var phi = Math.acos((AB[0]*BC[0]+AB[1]+BC[1])/(dist(AB)*dist(BC)));//returns sth between 0 and pi
-			var theta = 20.0;
-			if (cross == 0){
-				theta = Math.PI - phi;
-			}
-			else if (cross > 0){//phi < pi
-				theta = Math.PI - phi;
-			}
-			else { //actually phi is greater than pi, but acos outputs 2*pi - phi instead (I guess)
-				theta = Math.PI + phi;
-			}
+			theta = calc_theta(AB,BC);
 			//console.log("AB, BC, cross, phi, theta: ", AB, BC, cross, phi, theta);
 			if (theta < mintheta){
 				leftest = c;
@@ -490,7 +481,7 @@ function calc_dual_graph(as_multigraph=false){
 	//finding which faces share edges
 	var num_faces = faces.length;
 	for (let edge of edges){
-		console.log("edge, facesOfEdge: ", edge, faces_of_edges[edge]);
+		//console.log("edge, facesOfEdge: ", edge, faces_of_edges[edge]);
 		if (faces_of_edges[edge].length == 1){
 			if (!(dual_graph[faces_of_edges[edge][0]].includes(num_faces)) || as_multigraph){
 				dual_graph[faces_of_edges[edge][0]].push(num_faces);
@@ -511,24 +502,6 @@ function calc_dual_graph(as_multigraph=false){
 
 ////////////////////////////////////////////////////////////////////
 
-
-
-
-var reference_point = [-371,-731];//just some random point outside (random so that it may be unlikely to cut exactly through a vertex, which would ruin the algorithm)
-function num_intersections_from_outside(mid_point, face){
-	var num_intersections = 0;
-	var n = face.length;
-	var line = reference_point.concat(mid_point);
-	//calc how many intersections there are
-	for (i in face){
-		var edge = [face[i], face[(i+1)%n]];
-		var edge_representation = coordinates[edge[0]].concat(coordinates[edge[1]]);
-		if (intersection(line,edge_representation) != -1){
-			num_intersections++;
-		}
-	}
-	return num_intersections;
-}
 
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 	if (find_set(new_edge[0]) == find_set(new_edge[1])){
@@ -628,22 +601,6 @@ function colorize(){
 }
 
 
-
-
-
-
-
-/*TODOS
- - verify that the edges are correctly extracted from the line and that the graph is correct
- - make check_new_face work (fix union-find structure?)
- - make find_face work
- - brainstorm how to best split the face (or how to best calculate the dual graph and then split the face based on that)
- - implement the best method for splitting a face
- - assign random colors to faces for now
-(test after each of those steps)
-*/
-
-
 // Calculate components of dual graph
 
 function get_components(){
@@ -679,6 +636,8 @@ function dfs(v, nodes){
 	}
 	return nodes
 }
+
+
 
 
 

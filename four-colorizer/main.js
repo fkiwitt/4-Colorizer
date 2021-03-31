@@ -4,9 +4,6 @@
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 
-var btn = document.getElementById('colorize-btn');
-// btn.onclick = function() {colorize()};
-
 //Variables
 var canvasx = $(canvas).offset().left;
 var canvasy = $(canvas).offset().top;
@@ -83,6 +80,8 @@ var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 var visited = [];
 var dual_graph = [[]]; //dual_graph[i] has the connections of the face with index i; dual_graph[n] are the connections to the outside
 
+var components_of_nodes = [];
+var components = [];
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
@@ -91,14 +90,6 @@ function on_draw_line(current_stroke){
 
 	var cnt = 0;
 	for(idx in new_edges) {
-		if (check_if_new_face(new_edges[idx])){
-			//TODO: Test and find mistakes: make sure find_face works and fix split face
-
-			//var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
-			//console.log("new edge and face created: ", new_edges[idx], face_id);
-			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
-			cnt++;
-		}
 		union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 	}
 	//console.log("This line creates ", cnt, " new faces.");
@@ -108,6 +99,7 @@ function on_draw_line(current_stroke){
 	faces.splice(0);
 	dual_graph.splice(0);
 	dual_graph.push([]);
+	hulls = {};//TODO: check that hulls works correctly; somehow it does not generate the hull of all components
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -125,13 +117,16 @@ function on_draw_line(current_stroke){
 		}
 	}*/
 	// Calculate color configuration
+	components_of_nodes.splice(0);
+	components.splice(0);
 	color_configuration = calculate_color_configuration();
 	console.log(color_configuration);
-	var components = get_components();
+	get_components();
 	console.log("components", components);
-	var component_graph = calculate_components_graph(components);
-	console.log("components graph:", component_graph)
+	calculate_components_graph(components);
+	// console.log("components graph:", component_graph)
 	colorize();
+	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
 }
 
 
@@ -505,28 +500,6 @@ function calc_dual_graph(as_multigraph=false){
 ////////////////////////////////////////////////////////////////////
 
 
-function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
-	if (find_set(new_edge[0]) == find_set(new_edge[1])){
-		return true;
-	}
-	return false;
-}
-
-function find_face(new_edge){
-	//calculate which face will be splitted
-	p1 = coordinates[new_edge[0]];
-	p2 = coordinates[new_edge[1]];
-	mid_point = [(p1[0]+p2[0])/2, (p1[1],p2[1])/2];
-	for (i in faces){
-		face = faces[i];
-		if (num_intersections_from_outside(mid_point, face)%2 == 1){//if sth fails check if there really is exactly one face with uneven intersections
-			return i;
-		}
-	}
-	console.log("something went wrong; could not find face that is split")
-}
-
-
 function intersection(path1, path2){
 	var grace = 0; //set to 20 for special debugging
 
@@ -584,6 +557,36 @@ function intersection(path1, path2){
 	}
 }
 
+faces_of_component = [];
+function calc_faces_of_component(){//TODO: test
+	for (i in components){
+		faces_of_component.push([]);
+	}
+	for (i in faces){
+		var cmpnt = components_of_nodes[faces[i][0]];
+		faces_of_component[cmpnt].push(faces[i]);
+	}
+}
+
+function colorize_recursive(component){ //start with the outside component (component 0?) //TODO: test
+	for (face of faces_of_component[component]){
+		ctx.fillStyle = colors[color_configuration[face]];
+		ctx.beginPath();
+		var begin = true;
+		for(node in faces[face]){
+			var element_coordinates = coordinates[faces[face][node]];
+			if(begin){ ctx.moveTo(element_coordinates[0], element_coordinates[1]); begin = false;} else {
+				ctx.lineTo(element_coordinates[0], element_coordinates[1]);
+			}
+		}
+		ctx.closePath();
+		ctx.fill();
+	}
+	for (next_cmpnt of components_graph[component]){
+		colorize(next_cmpnt);
+	}
+}
+
 function colorize(){
 	for(face in faces){
 		ctx.fillStyle = colors[color_configuration[face]];
@@ -604,13 +607,10 @@ function colorize(){
 
 
 // Calculate components of dual graph
-
 function get_components(){
-	var components = [];
-
 	for(v in graph){
 		var respective_component_already_discovered = false;
-		// console.log(components);
+		//console.log(components);
 		for(var i = 0; i < components.length; i+= 1){//component in components){
 			if(components[i].includes(parseInt(v))){
 				respective_component_already_discovered = true;
@@ -624,9 +624,19 @@ function get_components(){
 			components.push(new_component);
 		}
 	}
-
-	return components;
 }
+
+function calc_components_of_nodes(){
+	for (var node = 0; node < coordinates.length; node++){
+		var cmpnt = get_component_for(node);
+		if (cmpnt == -1){
+			console.log("Weird, somehow the node ", node, " is not part of any component.");
+			continue;
+		}
+		components_of_nodes.push(cmpnt);
+	}
+}
+
 
 function dfs(v, nodes){
 	for(adjacent_node of graph[v]){
@@ -643,15 +653,13 @@ function dfs(v, nodes){
 
 
 // Creating component graph
-
-function calculate_components_graph(components){
-	var component_graph = Array(components.length).fill([]);
-
+var component_graph = Array(components.length).fill([]);
+function calculate_components_graph(){
 	for(face in faces){
 		for(component in components){
 			if(!faces[face].includes(components[component][0])){
 				if(is_in(faces[face], components[component][0])){
-					var face_component = get_component_for(faces[face][0], components);
+					var face_component = get_component_for(faces[face][0]);
 					if(!component_graph[component].includes(face_component)){
 						component_graph[component].push(face_component);
 					}
@@ -662,18 +670,16 @@ function calculate_components_graph(components){
 
 	// Graph clean-up
 	// for(node in component_graph){
-	// 	remove_inferior_nodes(node, component_graph);
+	// 	remove_inferior_nodes(node);
 	// }
-
-	return component_graph;
 }
 
 
-function remove_inferior_nodes(node, component_graph){
+function remove_inferior_nodes(node){
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete = nodes_to_delete.concat(remove_inferior_nodes(adjacent_node, component_graph));
+		nodes_to_delete = nodes_to_delete.concat(remove_inferior_nodes(adjacent_node));
 	}
 
 	var new_adjacency = [];
@@ -717,7 +723,7 @@ function is_in(face, v){
 }
 
 
-function get_component_for(node, components){
+function get_component_for(node){
 	for(component in components){
 		if(components[component].includes(node)){
 			return component;
@@ -775,6 +781,18 @@ function recursive_color(coloring, v){
 function check_coloring_for(node, color, coloring){
 	for(v in dual_graph[node]){
 		if(coloring[dual_graph[node][v]] ==  color){ return false; }
+	}
+	return true;
+}
+
+
+function check_total_coloring(coloring){
+	for (i in dual_graph){
+		for (j in dual_graph[i]){
+			if (coloring[i] == coloring[dual_graph[i][j]]){
+				return false;
+			}
+		}
 	}
 	return true;
 }

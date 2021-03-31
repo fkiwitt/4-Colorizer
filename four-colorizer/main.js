@@ -128,7 +128,9 @@ function on_draw_line(current_stroke){
 	color_configuration = calculate_color_configuration();
 	console.log(color_configuration);
 	var components = get_components();
-	var compontent_graph = calculate_components_graph(components);
+	console.log("components", components);
+	// var component_graph = calculate_components_graph(components);
+	// console.log("components graph:", component_graph)
 	colorize();
 }
 
@@ -526,7 +528,7 @@ function find_face(new_edge){
 
 
 function intersection(path1, path2){
-	var grace = 10; //set to 20 for special debugging
+	var grace = 0; //set to 20 for special debugging
 
 	if(path1 == path2){
 		return -1;
@@ -606,14 +608,14 @@ function colorize(){
 function get_components(){
 	var components = [];
 
-	for(v in dual_graph){
+	for(v in graph){
 		var respective_component_already_discovered = false;
-		console.log(components);
+		// console.log(components);
 		for(var i = 0; i < components.length; i+= 1){//component in components){
-			if(components[i].includes(v)){
+			if(components[i].includes(parseInt(v))){
 				respective_component_already_discovered = true;
 				break;
-			}
+			}else{ console.log("not included:", parseInt(v), components[i]); }
 		}
 		if(respective_component_already_discovered){
 			continue;
@@ -627,11 +629,11 @@ function get_components(){
 }
 
 function dfs(v, nodes){
-	for(adjacent_node of dual_graph[v]){
+	for(adjacent_node of graph[v]){
+		console.log("already collected:", nodes);
 		if(!nodes.includes(adjacent_node)){
-			nodes.push(adjacent_node);
-			var secondary_adjacent_nodes = dfs(adjacent_node, nodes);
-			nodes = nodes.concat(secondary_adjacent_nodes);
+			nodes.push(parseInt(adjacent_node));
+			dfs(adjacent_node, nodes);
 		}
 	}
 	return nodes

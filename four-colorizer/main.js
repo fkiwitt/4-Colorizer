@@ -80,6 +80,8 @@ var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 var visited = [];
 var dual_graph = [[]]; //dual_graph[i] has the connections of the face with index i; dual_graph[n] are the connections to the outside
 
+var components_of_nodes = [];
+var components = [];
 
 function on_draw_line(current_stroke){
 	var result = add_line(current_stroke);
@@ -114,11 +116,13 @@ function on_draw_line(current_stroke){
 		}
 	}*/
 	// Calculate color configuration
+	components_of_nodes.splice(0);
+	components.splice(0);
 	color_configuration = calculate_color_configuration();
 	console.log(color_configuration);
-	var components = get_components();
+	get_components();
 	console.log("components", components);
-	// var component_graph = calculate_components_graph(components);
+	calculate_components_graph(components);
 	// console.log("components graph:", component_graph)
 	colorize();
 	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
@@ -553,9 +557,32 @@ function intersection(path1, path2){
 }
 
 faces_of_component = [];
-function calc_faces_of_component(){
+function calc_faces_of_component(){//TODO: test
+	for (i in components){
+		faces_of_component.push([]);
+	}
 	for (i in faces){
+		var cmpnt = components_of_nodes[faces[i][0]];
+		faces_of_component[cmpnt].push(faces[i]);
+	}
+}
 
+function colorize_recursive(component){ //start with the outside component (component 0?) //TODO: test
+	for (face of faces_of_component[component]){
+		ctx.fillStyle = colors[color_configuration[face]];
+		ctx.beginPath();
+		var begin = true;
+		for(node in faces[face]){
+			var element_coordinates = coordinates[faces[face][node]];
+			if(begin){ ctx.moveTo(element_coordinates[0], element_coordinates[1]); begin = false;} else {
+				ctx.lineTo(element_coordinates[0], element_coordinates[1]);
+			}
+		}
+		ctx.closePath();
+		ctx.fill();
+	}
+	for (next_cmpnt of components_graph[component]){
+		colorize(next_cmpnt);
 	}
 }
 
@@ -579,7 +606,6 @@ function colorize(){
 
 
 // Calculate components of dual graph
-var components = [];
 function get_components(){
 	for(v in graph){
 		var respective_component_already_discovered = false;
@@ -588,7 +614,7 @@ function get_components(){
 			if(components[i].includes(parseInt(v))){
 				respective_component_already_discovered = true;
 				break;
-			}else{ console.log("not included:", parseInt(v), components[i]); }
+			}//else{ console.log("not included:", parseInt(v), components[i]); }
 		}
 		if(respective_component_already_discovered){
 			continue;
@@ -597,11 +623,8 @@ function get_components(){
 			components.push(new_component);
 		}
 	}
-
-	return components;
 }
 
-var components_of_nodes = [];
 function calc_components_of_nodes(){
 	for (var node = 0; node < coordinates.length; node++){
 		var cmpnt = get_component_for(node);
@@ -616,7 +639,7 @@ function calc_components_of_nodes(){
 
 function dfs(v, nodes){
 	for(adjacent_node of graph[v]){
-		console.log("already collected:", nodes);
+		//console.log("already collected:", nodes);
 		if(!nodes.includes(adjacent_node)){
 			nodes.push(parseInt(adjacent_node));
 			dfs(adjacent_node, nodes);
@@ -644,8 +667,6 @@ function calculate_components_graph(){
 	for(node in component_graph){
 		remove_inferior_nodes(node);
 	}
-
-	return component_graph;
 }
 
 

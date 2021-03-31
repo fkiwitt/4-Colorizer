@@ -670,6 +670,22 @@ function get_component_for(node, components){
 }
 
 
+// Calculate coloring order
+
+function calculate_coloring_order(component_graph){
+	var order = [];
+	topsort(0, component_graph, order); // 0 start node
+	return order;
+}
+
+function topsort(v, component_graph, order){
+	order.push(v);
+	for(adjacent_node in component_graph[v]){
+		topsort(component_graph[adjacent_node], component_graph, order);
+	}
+}
+
+
 
 
 // Calculate coloring

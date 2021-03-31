@@ -91,14 +91,6 @@ function on_draw_line(current_stroke){
 
 	var cnt = 0;
 	for(idx in new_edges) {
-		if (check_if_new_face(new_edges[idx])){
-			//TODO: Test and find mistakes: make sure find_face works and fix split face
-
-			//var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
-			//console.log("new edge and face created: ", new_edges[idx], face_id);
-			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
-			cnt++;
-		}
 		union(new_edges[idx][0],new_edges[idx][1]);//not sure if that is the correct place for that and if it works as it should
 	}
 	//console.log("This line creates ", cnt, " new faces.");
@@ -612,10 +604,8 @@ function colorize(){
 
 
 // Calculate components of dual graph
-
+var components = [];
 function get_components(){
-	var components = [];
-
 	for(v in graph){
 		var respective_component_already_discovered = false;
 		//console.log(components);
@@ -636,10 +626,10 @@ function get_components(){
 	return components;
 }
 
-components_of_nodes = [];
-function calc_components_of_nodes(components){
+var components_of_nodes = [];
+function calc_components_of_nodes(){
 	for (var node = 0; node < coordinates.length; node++){
-		var cmpnt = get_component_for(node, components);
+		var cmpnt = get_component_for(node);
 		if (cmpnt == -1){
 			console.log("Weird, somehow the node ", node, " is not part of any component.");
 			continue;
@@ -665,32 +655,30 @@ function dfs(v, nodes){
 
 
 // Creating component graph
-
-function calculate_components_graph(components){
-	var component_graph = Array(components.length).fill([]);
-
+var component_graph = Array(components.length).fill([]);
+function calculate_components_graph(){
 	for(face in faces){
 		for(component in components){
 			if(is_in(faces[face], components[component][0])){
-				component_graph[component].push(get_component_for(faces[face][0], components));
+				component_graph[component].push(get_component_for(faces[face][0]));
 			}
 		}
 	}
 
 	// Graph clean-up
 	for(node in component_graph){
-		remove_inferior_nodes(node, component_graph);
+		remove_inferior_nodes(node);
 	}
 
 	return component_graph;
 }
 
 
-function remove_inferior_nodes(node, component_graph){
+function remove_inferior_nodes(node){
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete.concat(remove_inferior_nodes(component_graph[node][adjacent_node], component_graph));//does concat automatically append?
+		nodes_to_delete.concat(remove_inferior_nodes(component_graph[node][adjacent_node]));//does concat automatically append?
 	}
 
 	var new_adjacency = [];
@@ -732,7 +720,7 @@ function is_in(face, v){
 }
 
 
-function get_component_for(node, components){
+function get_component_for(node){
 	for(component in components){
 		if(components[component].includes(node)){
 			return component;

@@ -130,6 +130,7 @@ function on_draw_line(current_stroke){
 	var components = get_components();
 	var compontent_graph = calculate_components_graph(components);
 	colorize();
+	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
 }
 
 
@@ -502,7 +503,7 @@ function calc_dual_graph(as_multigraph=false){
 
 ////////////////////////////////////////////////////////////////////
 
-
+/*unneeded
 function check_if_new_face(new_edge){//TODO: test if it is correct for all lines
 	if (find_set(new_edge[0]) == find_set(new_edge[1])){
 		return true;
@@ -523,10 +524,10 @@ function find_face(new_edge){
 	}
 	console.log("something went wrong; could not find face that is split")
 }
-
+*/
 
 function intersection(path1, path2){
-	var grace = 10; //set to 20 for special debugging
+	var grace = 0; //set to 20 for special debugging
 
 	if(path1 == path2){
 		return -1;
@@ -582,6 +583,13 @@ function intersection(path1, path2){
 	}
 }
 
+faces_of_component = [];
+function calc_faces_of_component(){
+	for (i in faces){
+
+	}
+}
+
 function colorize(){
 	for(face in faces){
 		ctx.fillStyle = colors[color_configuration[face]];
@@ -601,6 +609,10 @@ function colorize(){
 }
 
 
+function colorize2(){//color in the correct order
+
+}
+
 // Calculate components of dual graph
 
 function get_components(){
@@ -608,7 +620,7 @@ function get_components(){
 
 	for(v in dual_graph){
 		var respective_component_already_discovered = false;
-		console.log(components);
+		//console.log(components);
 		for(var i = 0; i < components.length; i+= 1){//component in components){
 			if(components[i].includes(v)){
 				respective_component_already_discovered = true;
@@ -625,6 +637,19 @@ function get_components(){
 
 	return components;
 }
+
+components_of_nodes = [];
+function calc_components_of_nodes(components){
+	for (var node = 0; node < coordinates.length; node++){
+		var cmpnt = get_component_for(node, components);
+		if (cmpnt == -1){
+			console.log("Weird, somehow the node ", node, " is not part of any component.");
+			continue;
+		}
+		components_of_nodes.push(cmpnt);
+	}
+}
+
 
 function dfs(v, nodes){
 	for(adjacent_node of dual_graph[v]){
@@ -667,7 +692,7 @@ function remove_inferior_nodes(node, component_graph){
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete.concat(remove_inferior_nodes(adjacent_node, component_graph));
+		nodes_to_delete.concat(remove_inferior_nodes(component_graph[node][adjacent_node], component_graph));//does concat automatically append?
 	}
 
 	var new_adjacency = [];
@@ -767,6 +792,18 @@ function recursive_color(coloring, v){
 function check_coloring_for(node, color, coloring){
 	for(v in dual_graph[node]){
 		if(coloring[dual_graph[node][v]] ==  color){ return false; }
+	}
+	return true;
+}
+
+
+function check_total_coloring(coloring){
+	for (i in dual_graph){
+		for (j in dual_graph[i]){
+			if (coloring[i] == coloring[dual_graph[i][j]]){
+				return false;
+			}
+		}
 	}
 	return true;
 }

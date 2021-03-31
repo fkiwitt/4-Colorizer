@@ -100,7 +100,6 @@ function on_draw_line(current_stroke){
 	dual_graph.splice(0);
 	dual_graph.push([]);
 	hulls = {};//TODO: check that hulls works correctly; somehow it does not generate the hull of all components
-	cmpnt_areas = {};//cmpnt id as key
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -648,6 +647,9 @@ function dfs(v, nodes){
 	}
 	return nodes
 }
+
+
+
 
 
 // Creating component graph

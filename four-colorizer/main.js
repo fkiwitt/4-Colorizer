@@ -621,9 +621,21 @@ function remove_inferior_nodes(node, component_graph){
 		nodes_to_delete.concat(component_graph[adjacent_node]);
 	}
 
-	for(inferior_node in nodes_to_delete){
-		component_graph[node].remove(nodes_to_delete[inferior_node]);
+	var new_adjacency = [];
+
+	for(adjacent_node in component_graph[node]){
+		var will_stay = true;
+		for(node_to_delete in nodes_to_delete){
+			if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){
+				will_stay = false;
+			}
+		}
+		if(will_stay){
+			new_adjacency.push(component_graph[node][adjacent_node]);
+		}
 	}
+
+	component_graph[node] = new_adjacency;
 
 	nodes_to_delete.concat(component_graph[node]);
 	return nodes_to_delete;

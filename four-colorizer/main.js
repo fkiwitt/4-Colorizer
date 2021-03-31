@@ -93,7 +93,7 @@ function on_draw_line(current_stroke){
 	for(idx in new_edges) {
 		if (check_if_new_face(new_edges[idx])){
 			//TODO: Test and find mistakes: make sure find_face works and fix split face
-			
+
 			//var face_id = find_face(new_edges[idx]);//may be problematic, because adjacent_edges has fewer edges than new_edges, but I think for all edges that cause a face split, there should exist the right adjacent_edge
 			//console.log("new edge and face created: ", new_edges[idx], face_id);
 			//split_face(face_id, new_edges[idx], adjacent_edges[idx]);
@@ -320,7 +320,7 @@ function dfs_left(a,b){//a is previous, b is current
 	}
 	visited.push(b);
 	return dfs_left(b,leftest);
-} 
+}
 
 
 function check_if_face_exists(face){//checks if a newly calculated face exists;
@@ -610,6 +610,133 @@ function colorize(){
 }
 
 
+// Calculate components of dual graph
+
+function get_components(){
+	var components = [];
+
+	for(v in dual_graph){
+		for(component in components){
+			if(components[component].includes(v)){
+				continue;
+			}
+		}
+
+		var new_component = dfs(v, []);
+		components.push(new_component);
+	}
+
+	return components;
+}
+
+function dfs(v){
+	var nodes = [];
+	for(adjacent_node in dual_graph[v]){
+		if(!nodes.includes(adjacent_node)){
+			nodes.push(adjacent_node);
+			var secondary_adjacent_nodes = dfs(adjacent_node, nodes);
+			nodes.concat(secondary_adjacent_nodes);
+		}
+	}
+}
+
+
+
+// Creating component graph
+
+function calculate_components_graph(components){
+	var component_graph = Array(components.length).fill([]);
+
+	for(face in faces){
+		for(component in components){
+			if(is_in_face(components[component][0], faces[face])){
+				component_graph[component].push(get_component_for(faces[face][0], components));
+			}
+		}
+	}
+
+	// Graph clean-up
+	for(node in component_graph){
+		remove_inferior_nodes(node, component_graph);
+	}
+}
+
+
+function remove_inferior_nodes(node, component_graph){
+	var nodes_to_delete = [];
+
+	for(adjacent_node in component_graph[node]){
+		nodes_to_delete.concat(component_graph[adjacent_node]);
+	}
+
+	var new_adjacency = [];
+
+	for(adjacent_node in component_graph[node]){
+		var will_stay = true;
+		for(node_to_delete in nodes_to_delete){
+			if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){
+				will_stay = false;
+			}
+		}
+		if(will_stay){
+			new_adjacency.push(component_graph[node][adjacent_node]);
+		}
+	}
+
+	component_graph[node] = new_adjacency;
+
+	nodes_to_delete.concat(component_graph[node]);
+	return nodes_to_delete;
+}
+
+
+function is_in(face, v){
+	var intersections = 0;
+
+	var v_coordinates = coordinates[v];
+	var reference_line = [[-1, -1], v_coordinates];
+
+	for(edge in face){
+		var border_line = [coordinates(face[edge % face.length]), coordinates(face[(edge + 1) % face.length])];
+		var border_intersection = intersection(border_line, reference_line);
+		if(border_intersection != -1){ //?
+			intersections += 1;
+		}
+	}
+
+	return (intersections % 2) == 1;
+}
+
+
+function get_component_for(node, components){
+	for(component in components){
+		if(components[component].includes(node)){
+			return component;
+		}
+	}
+	return -1;
+}
+
+
+// Calculate coloring order
+
+function calculate_coloring_order(component_graph){
+	var order = [];
+	topsort(0, component_graph, order); // 0 start node
+	return order;
+}
+
+function topsort(v, component_graph, order){
+	order.push(v);
+	for(adjacent_node in component_graph[v]){
+		topsort(component_graph[adjacent_node], component_graph, order);
+	}
+}
+
+
+
+
+// Calculate coloring
 function calculate_color_configuration(graph){
 	var coloring = Array(graph.length).fill(-1);
 	coloring = recursive_color(graph, coloring, 0);

@@ -728,7 +728,7 @@ function remove_inferior_nodes(node, component_graph){
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete.concat(component_graph[adjacent_node]);
+		nodes_to_delete.concat(remove_inferior_nodes(adjacent_node, component_graph));
 	}
 
 	var new_adjacency = [];

@@ -124,7 +124,7 @@ function on_draw_line(current_stroke){
 	get_components();
 	console.log("components", components);
 	calculate_components_graph(components);
-	// console.log("components graph:", component_graph)
+	console.log("components graph:", component_graph)
 	colorize();
 	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
 }
@@ -653,13 +653,15 @@ function dfs(v, nodes){
 
 
 // Creating component graph
-var component_graph = Array(components.length).fill([]);
+var component_graph = [];
 function calculate_components_graph(){
+	component_graph = Array(components.length).fill([]);
 	for(face in faces){
 		for(component in components){
 			if(!faces[face].includes(components[component][0])){
 				if(is_in(faces[face], components[component][0])){
 					var face_component = get_component_for(faces[face][0]);
+					console.log("check:", component, face_component, faces[face])
 					if(!component_graph[component].includes(face_component)){
 						component_graph[component].push(face_component);
 					}
@@ -707,17 +709,18 @@ function is_in(face, v){
 	var intersections = 0;
 
 	var v_coordinates = coordinates[v];
-	var reference_line = [[-1, -1], v_coordinates];
+	var reference_line = [[-613, -717], v_coordinates].flat();
 
 	for(edge in face){
-		var border_line = [coordinates[face[edge]], coordinates[face[(edge + 1) % face.length]]];
+		var border_line = [coordinates[face[edge]], coordinates[face[(edge + 1) % face.length]]].flat();
 		var border_intersection = intersection(border_line, reference_line);
 		// console.log("intersection:", border_line, reference_line, border_intersection);
 		if(border_intersection != -1){ //?
 			intersections += 1;
 		}
 	}
-	// console.log("intersections:", intersections);
+
+	console.log("face:",face,"node:",v,"(",coordinates[v],")","intersections:", intersections);
 
 	return (intersections % 2) == 1;
 }

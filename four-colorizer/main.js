@@ -77,7 +77,7 @@ var graph = [
 ];
 
 var faces = [ [0,1,2,3] ];//means for example that the first face has the edges [0,1],[1,2],[2,3],[3,0]
-var color_configuration = [ 0, 1 ];
+var color_configuration = [];
 var colors = ['#f00', '#0f0', '#00f', '#FF33F6'];
 
 var visited = [];
@@ -125,7 +125,10 @@ function on_draw_line(current_stroke){
 		}
 	}*/
 	// Calculate color configuration
-	//colorize();
+	// var compontents_graph = calculate_components_graph();
+	color_configuration = calculate_color_configuration();
+	console.log(color_configuration);
+	colorize();
 }
 
 
@@ -578,38 +581,6 @@ function intersection(path1, path2){
 	}
 }
 
-function split_face(face_id, new_edge, adjacent_edges){
-	var polygon = faces[face_id];
-	var face1 = [];
-	var face2 = [];
-
-	var after_edge = false;
-	for(node in polygon){
-		var element = polygon[node];
-		var both = false;
-
-		for(adjacent_edge in adjacent_edges){
-			for(adjacent_node in adjacent_edges[adjacent_edge]){
-				if(adjacent_edges[adjacent_edge][adjacent_node] == element){
-					after_edge = !after_edge;
-					face1.push(new_edge[adjacent_node]);
-					face2.push(new_edge[adjacent_node]);
-					adjacent_edges[adjacent_edge] = [-1,-1];
-				}
-			}
-		}
-
-		if(!after_edge){
-			face1.push(element);
-		}else{
-			face2.push(element);
-		}
-	}
-
-	faces[face_id] = face1;
-	faces.push(face2);
-}
-
 function colorize(){
 	for(face in faces){
 		ctx.fillStyle = colors[color_configuration[face]];
@@ -759,22 +730,25 @@ function topsort(v, component_graph, order){
 
 // Calculate coloring
 
-function calculate_color_configuration(graph){
-	var coloring = Array(graph.length).fill(-1);
-	coloring = recursive_color(graph, coloring, 0);
+function calculate_color_configuration(){
+	var coloring = Array(dual_graph.length).fill(-1);
+	coloring = recursive_color(coloring, 0);
 	return coloring;
 }
 
-function recursive_color(graph, coloring, v){
-	if(v == graph.length){
+function recursive_color(coloring, v){
+	if(v == dual_graph.length){
 		return coloring;
 	}
 
 	for(var i = 0; i < 4; i++){
 		var temp_coloring = JSON.parse(JSON.stringify(coloring));
 		temp_coloring[v] = i;
-		if(check_coloring_for(graph, temp_coloring, v) != false){
-			return recursive_color(graph, temp_coloring, (v+1));
+		if(check_coloring_for(v, i, temp_coloring)){
+			var result = recursive_color(temp_coloring, (v+1));
+			if(result != false){
+				return result;
+			}
 		}
 	}
 	return false;
@@ -782,8 +756,8 @@ function recursive_color(graph, coloring, v){
 
 
 function check_coloring_for(node, color, coloring){
-	for(v in graph[node]){
-		if(coloring[graph[node][v]] ==  color){ return false; }
+	for(v in dual_graph[node]){
+		if(coloring[dual_graph[node][v]] ==  color){ return false; }
 	}
 	return true;
 }

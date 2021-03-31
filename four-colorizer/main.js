@@ -4,9 +4,6 @@
 var canvas = document.getElementById('canvas');
 var ctx = canvas.getContext('2d');
 
-var btn = document.getElementById('colorize-btn');
-// btn.onclick = function() {colorize()};
-
 //Variables
 var canvasx = $(canvas).offset().left;
 var canvasy = $(canvas).offset().top;

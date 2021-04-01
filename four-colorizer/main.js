@@ -728,6 +728,13 @@ function integrate_hierarchy_into_dual_graph(){
 			}
 		}
 	}
+	//delete the edges toward the outside
+	dual_graph[faces.length].splice(0);
+	/*for (i in dual_graph){ //this deletion somehow does not work reliably
+		if (index_of(dual_graph[i], faces.length) != -1){
+			dual_graph[i].splice(index_of(dual_graph[i], faces.length),1);
+		}
+	}*/
 }
 
 

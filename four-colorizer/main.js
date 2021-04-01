@@ -89,6 +89,7 @@ var faces_of_component = [];//contains the indexes of faces for each component
 var cnt_faces = {}//component id is key //there is no entry for a component without faces
 
 var component_graph = [];
+var superior_faces = [];//for each component the face indexes in which it is
 
 
 function on_draw_line(current_stroke){
@@ -114,6 +115,7 @@ function on_draw_line(current_stroke){
 	components.splice(0);
 	faces_of_component.splice(0);
 	component_graph.splice(0);
+	superior_faces.splice(0);
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -351,7 +353,7 @@ function dfs_left(a,b){//a is previous, b is current
 
 function check_if_face_exists(face){//checks if a newly calculated face exists;
 	for (i in faces){
-		face2 = faces[i];
+		var face2 = faces[i];
 		if (face2.length != face.length){
 			continue;
 		}
@@ -381,7 +383,7 @@ function calc_polygon_area(face){
 	return area;
 }
 
-function calc_hulls(){
+function calc_hulls(){//TODO: In some cases calculating the hull means that we need to visit some nodes more than once, which is not possible yet
 	for (var i = 0; i < faces.length; i++){
 		var face = faces[i];
 		var cmpnt = find_set(face[0]);
@@ -633,8 +635,11 @@ function dfs(v, nodes){
 
 // Creating component graph
 function calculate_components_graph(){
-	for (cmpnt1 in components){
+	for (i in components){
 		component_graph.push([]);
+		superior_faces.push([]);
+	}
+	for (cmpnt1 in components){
 		for (i in faces_of_component[cmpnt1]){
 			var face_idx = faces_of_component[cmpnt1][i];
 			for(cmpnt2 in components){
@@ -647,6 +652,7 @@ function calculate_components_graph(){
 						console.assert(face_component == cmpnt1, "AssertionError: Something does not work!");
 						if(!component_graph[cmpnt1].includes(cmpnt2)){//that condition should not be necessary (anymore)
 							component_graph[cmpnt1].push(cmpnt2);
+							superior_faces[cmpnt2].push(face_idx);
 						}
 					}
 				}
@@ -660,11 +666,11 @@ function calculate_components_graph(){
 }
 
 
-function remove_inferior_nodes(node){
+function remove_inferior_nodes(node){//Seems to work; I think it is improveable exponential running time, but for now it is ok I would say
 	var nodes_to_delete = [];
 
 	for(adjacent_node in component_graph[node]){
-		nodes_to_delete = nodes_to_delete.concat(remove_inferior_nodes(adjacent_node));
+		nodes_to_delete = nodes_to_delete.concat(remove_inferior_nodes(component_graph[node][adjacent_node]));
 	}
 
 	var new_adjacency = [];
@@ -704,8 +710,12 @@ function is_in(face, v){
 		}
 	}
 	//console.log("face:",face,"node:",v,"(",coordinates[v],")","intersections:", intersections);
-
 	return (intersections % 2) == 1;
+}
+
+
+function integrate_hierarchy_into_dual_graph(){
+
 }
 
 

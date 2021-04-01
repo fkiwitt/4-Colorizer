@@ -680,7 +680,8 @@ function remove_inferior_nodes(node){//Seems to work; I think it is improveable 
 	for(adjacent_node in component_graph[node]){
 		var will_stay = true;
 		for(node_to_delete in nodes_to_delete){
-			if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){//this does not work (.includes does not exist for integers); not sure what you wanted to do
+			//if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){//this does not work (.includes does not exist for integers); not sure what you wanted to do
+				if(component_graph[component_graph[node][adjacent_node]].includes(nodes_to_delete[node_to_delete])){ //nope your fix did not work, the wrong edge is now deleted
 				will_stay = false;
 			}
 		}

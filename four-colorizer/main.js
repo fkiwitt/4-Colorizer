@@ -85,8 +85,10 @@ var cmpnt_areas = {};//cmpnt id as key
 
 var components_of_nodes = [];
 var components = [];
-var faces_of_component = [];
+var faces_of_component = [];//contains the indexes of faces for each component
 var cnt_faces = {}//component id is key //there is no entry for a component without faces
+
+var component_graph = [];
 
 
 function on_draw_line(current_stroke){
@@ -108,7 +110,10 @@ function on_draw_line(current_stroke){
 	hulls = {};//TODO: check that hulls works correctly; somehow it does not generate the hull of all components
 	cmpnt_areas = {};
 	cnt_faces = {};
+	components_of_nodes.splice(0);
+	components.splice(0);
 	faces_of_component.splice(0);
+	component_graph.splice(0);
 	calc_dual_graph();
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -126,8 +131,6 @@ function on_draw_line(current_stroke){
 		}
 	}*/
 	// Calculate color configuration
-	components_of_nodes.splice(0);
-	components.splice(0);
 	color_configuration = calculate_color_configuration();
 	console.log(color_configuration);
 	get_components();
@@ -135,8 +138,8 @@ function on_draw_line(current_stroke){
 	calc_faces_of_component();
 	console.log("components", components);
 	//console.log("components_of_nodes: ", components_of_nodes); //works, but somehow saves every cmpnt_idx as string
-	//console.log("faces_of_components: ", faces_of_component); // mostly works, but does not recognize greatest face that is there from the beginning
-	calculate_components_graph(components);
+	console.log("faces_of_components: ", faces_of_component); // mostly works, but does not recognize greatest face that is there from the beginning
+	calculate_components_graph();
 	console.log("components graph:", component_graph)
 	colorize();
 	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
@@ -614,7 +617,7 @@ function calc_faces_of_component(){//TODO: test
 	}
 	for (i in faces){
 		var cmpnt = components_of_nodes[faces[i][0]];
-		faces_of_component[cmpnt].push(faces[i]);
+		faces_of_component[cmpnt].push(i);
 	}
 }
 
@@ -629,27 +632,31 @@ function dfs(v, nodes){
 }
 
 // Creating component graph
-var component_graph = [];
 function calculate_components_graph(){
-	component_graph = Array(components.length).fill([]);
-	for(face in faces){
-		for(component in components){
-			if(!faces[face].includes(components[component][0])){
-				if(is_in(faces[face], components[component][0])){
-					var face_component = get_component_for(faces[face][0]);
-					//console.log("check:", component, face_component, faces[face])
-					if(!component_graph[component].includes(face_component)){
-						component_graph[component].push(face_component);
+	for (cmpnt1 in components){
+		component_graph.push([]);
+		for (i in faces_of_component[cmpnt1]){
+			var face_idx = faces_of_component[cmpnt1][i];
+			for(cmpnt2 in components){
+				console.assert(components_of_nodes[components[cmpnt2][0]] == cmpnt2, "AssertionError: components_of_nodes does not work");
+				console.assert(components_of_nodes[faces[face_idx][0]] == cmpnt1, "AssertionError: components_of_nodes or faces_of_component does not work");
+				if(cmpnt1 != cmpnt2) { //if(!faces[face].includes(components[component][0])){ //I think the former statement was false, because the face and the first node of the component could belong to the same component
+					//console.log("cmpnt1, cmpnt2, face, point to check, is_in: ",cmpnt1, cmpnt2, faces[face_idx], components[cmpnt2][0], is_in(faces[face_idx], components[cmpnt2][0]));
+					if(is_in(faces[face_idx], components[cmpnt2][0])){
+						var face_component = components_of_nodes[faces[face_idx][0]];//get_component_for(faces[face][0]);
+						console.assert(face_component == cmpnt1, "AssertionError: Something does not work!");
+						if(!component_graph[cmpnt1].includes(cmpnt2)){//that condition should not be necessary (anymore)
+							component_graph[cmpnt1].push(cmpnt2);
+						}
 					}
 				}
 			}
 		}
 	}
-
 	// Graph clean-up
-	// for(node in component_graph){
-	// 	remove_inferior_nodes(node);
-	// }
+	for(node in component_graph){
+	 	remove_inferior_nodes(node);
+	}
 }
 
 
@@ -685,12 +692,13 @@ function is_in(face, v){
 	var intersections = 0;
 
 	var v_coordinates = coordinates[v];
-	var reference_line = [[-613, -717], v_coordinates].flat();
+	var reference_line = [-613, -717, v_coordinates[0], v_coordinates[1]];
 
-	for(edge in face){
-		var border_line = [coordinates[face[edge]], coordinates[face[(edge + 1) % face.length]]].flat();
+	for(node in face){
+		node = parseInt(node);
+		var border_line = [coordinates[face[node]][0],coordinates[face[node]][1], coordinates[face[(node+1)%face.length]][0], coordinates[face[(node+1)%face.length]][1]];
 		var border_intersection = intersection(border_line, reference_line);
-		// console.log("intersection:", border_line, reference_line, border_intersection);
+		//console.log("intersection:", border_line, reference_line, border_intersection);
 		if(border_intersection != -1){ //?
 			intersections += 1;
 		}

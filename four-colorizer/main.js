@@ -86,6 +86,7 @@ var cmpnt_areas = {};//cmpnt id as key
 var components_of_nodes = [];
 var components = [];
 var faces_of_component = [];
+var cnt_faces = {}//component id is key //there is no entry for a component without faces
 
 
 function on_draw_line(current_stroke){
@@ -106,6 +107,7 @@ function on_draw_line(current_stroke){
 	dual_graph.push([]);
 	hulls = {};//TODO: check that hulls works correctly; somehow it does not generate the hull of all components
 	cmpnt_areas = {};
+	cnt_faces = {};
 	faces_of_component.splice(0);
 	calc_dual_graph();
 	console.log("faces: ",faces);
@@ -392,8 +394,6 @@ function calc_hulls(){
 	}
 }
 
-
-cnt_faces = {}//component id is key //there is no entry for a component without faces
 function cnt_faces_of_cmpnts(){//including the hull
 	for (var i = 0; i < faces.length; i++){
 		var cmpnt = find_set(faces[i][0]);

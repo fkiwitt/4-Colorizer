@@ -137,7 +137,8 @@ function on_draw_line(current_stroke){
 	integrate_hierarchy_into_dual_graph();
 	// Calculate color configuration
 	color_configuration = calculate_color_configuration();
-	colorize();
+	//colorize();
+	colorize_recursive(0);
 	//console.log(color_configuration);
 	console.log("faces: ",faces);
 	console.log("dual_graph: ", dual_graph);
@@ -679,7 +680,7 @@ function remove_inferior_nodes(node){//Seems to work; I think it is improveable 
 	for(adjacent_node in component_graph[node]){
 		var will_stay = true;
 		for(node_to_delete in nodes_to_delete){
-			if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){
+			if(component_graph[node][adjacent_node].includes(nodes_to_delete[node_to_delete])){//this does not work (.includes does not exist for integers); not sure what you wanted to do
 				will_stay = false;
 			}
 		}
@@ -716,14 +717,11 @@ function is_in(face, v){
 
 
 function integrate_hierarchy_into_dual_graph(){
-	console.log("FUNCTION IS CALLED");
 	for (face_idx of dual_graph[faces.length]){//iterate through all faces that are connected to the outside
 		var cmpnt = parseInt(components_of_nodes[faces[face_idx][0]]);
-		console.log("LOG: ", cmpnt, superior_faces, superior_faces[cmpnt]);
 		for (i in superior_faces[cmpnt]){ //iterate through superior faces
 			var sup_face_idx = superior_faces[cmpnt][i];
 			var sup_cmpnt = components_of_nodes[faces[sup_face_idx][0]];
-			console.log("sup_cmpnt, cmpnt, sup_face, face: ", sup_cmpnt, cmpnt, sup_face_idx, face_idx);
 			if (component_graph[sup_cmpnt].includes(cmpnt)){ //if the component is directly in the surrounding face (with no face between)
 				dual_graph[face_idx].push(sup_face_idx);
 				dual_graph[sup_face_idx].push(face_idx);
@@ -784,8 +782,11 @@ function colorize_recursive(component){ //start with the outside component (comp
 		ctx.closePath();
 		ctx.fill();
 	}
-	for (next_cmpnt of components_graph[component]){
-		colorize(next_cmpnt);
+	for (next_cmpnt of component_graph[component]){
+		colorize_recursive(next_cmpnt);
+	}
+	if (component == 0){
+		draw_current_canvas();
 	}
 }
 

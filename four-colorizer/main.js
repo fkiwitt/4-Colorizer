@@ -116,9 +116,6 @@ function on_draw_line(current_stroke){
 	faces_of_component.splice(0);
 	component_graph.splice(0);
 	superior_faces.splice(0);
-	calc_dual_graph();
-	console.log("faces: ",faces);
-	console.log("dual_graph: ", dual_graph);
 	//calc_hirarchy();
 	//console.log("set of each vertex: ");
 	//[...Array(graph.length).keys()].forEach(x => console.log(find_set(x)));
@@ -132,18 +129,22 @@ function on_draw_line(current_stroke){
 			visited_components.add(find_set(i));
 		}
 	}*/
-	// Calculate color configuration
-	color_configuration = calculate_color_configuration();
-	console.log(color_configuration);
+	calc_dual_graph();
 	get_components();
 	calc_components_of_nodes();
 	calc_faces_of_component();
+	calculate_components_graph();
+	integrate_hierarchy_into_dual_graph();
+	// Calculate color configuration
+	color_configuration = calculate_color_configuration();
+	colorize();
+	//console.log(color_configuration);
+	console.log("faces: ",faces);
+	console.log("dual_graph: ", dual_graph);
 	console.log("components", components);
 	//console.log("components_of_nodes: ", components_of_nodes); //works, but somehow saves every cmpnt_idx as string
 	console.log("faces_of_components: ", faces_of_component); // mostly works, but does not recognize greatest face that is there from the beginning
-	calculate_components_graph();
 	console.log("components graph:", component_graph)
-	colorize();
 	console.log("Is the math representation of the coloring correct (in respect to the dual_graph)?: ", check_total_coloring(color_configuration))
 }
 
@@ -651,7 +652,7 @@ function calculate_components_graph(){
 						var face_component = components_of_nodes[faces[face_idx][0]];//get_component_for(faces[face][0]);
 						console.assert(face_component == cmpnt1, "AssertionError: Something does not work!");
 						if(!component_graph[cmpnt1].includes(cmpnt2)){//that condition should not be necessary (anymore)
-							component_graph[cmpnt1].push(cmpnt2);
+							component_graph[cmpnt1].push(parseInt(cmpnt2));
 							superior_faces[cmpnt2].push(face_idx);
 						}
 					}
@@ -715,7 +716,20 @@ function is_in(face, v){
 
 
 function integrate_hierarchy_into_dual_graph(){
-
+	console.log("FUNCTION IS CALLED");
+	for (face_idx of dual_graph[faces.length]){//iterate through all faces that are connected to the outside
+		var cmpnt = parseInt(components_of_nodes[faces[face_idx][0]]);
+		console.log("LOG: ", cmpnt, superior_faces, superior_faces[cmpnt]);
+		for (i in superior_faces[cmpnt]){ //iterate through superior faces
+			var sup_face_idx = superior_faces[cmpnt][i];
+			var sup_cmpnt = components_of_nodes[faces[sup_face_idx][0]];
+			console.log("sup_cmpnt, cmpnt, sup_face, face: ", sup_cmpnt, cmpnt, sup_face_idx, face_idx);
+			if (component_graph[sup_cmpnt].includes(cmpnt)){ //if the component is directly in the surrounding face (with no face between)
+				dual_graph[face_idx].push(sup_face_idx);
+				dual_graph[sup_face_idx].push(face_idx);
+			}
+		}
+	}
 }
 
 
